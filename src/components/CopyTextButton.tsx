@@ -2,6 +2,17 @@
 
 import { useState } from "react";
 
+class ApiError extends Error {}
+
+async function fetchListText(fetchUrl: string): Promise<string> {
+  const res = await fetch(fetchUrl);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError(data.error ?? "Failed to generate list");
+  }
+  return data.text as string;
+}
+
 export default function CopyTextButton({
   label,
   fetchUrl,
@@ -20,18 +31,31 @@ export default function CopyTextButton({
     setStatus("loading");
     setErrorMessage(null);
     try {
-      const res = await fetch(fetchUrl);
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorMessage(data.error ?? "Failed to generate list");
-        setStatus("error");
-        return;
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+        // Give ClipboardItem a pending Blob promise so navigator.clipboard.write()
+        // itself is invoked synchronously within this click handler. Some
+        // browsers (notably iOS Safari) reject a clipboard write if it happens
+        // after an earlier `await` (e.g. a fetch) breaks the "direct user
+        // gesture" requirement — this pattern keeps the write call itself
+        // inside the gesture while the actual text resolves afterward.
+        const blobPromise = fetchListText(fetchUrl).then(
+          (text) => new Blob([text], { type: "text/plain" })
+        );
+        await navigator.clipboard.write([
+          new ClipboardItem({ "text/plain": blobPromise }),
+        ]);
+      } else {
+        const text = await fetchListText(fetchUrl);
+        await navigator.clipboard.writeText(text);
       }
-      await navigator.clipboard.writeText(data.text);
       setStatus("copied");
       setTimeout(() => setStatus("idle"), 2000);
-    } catch {
-      setErrorMessage("Couldn't copy — check clipboard permissions");
+    } catch (err) {
+      setErrorMessage(
+        err instanceof ApiError
+          ? err.message
+          : "Couldn't copy — check clipboard permissions"
+      );
       setStatus("error");
     }
   }
