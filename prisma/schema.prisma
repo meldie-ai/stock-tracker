@@ -1,0 +1,114 @@
+// Prisma schema for stock-tracker
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  lastLoginAt  DateTime?
+
+  shiftsStarted Shift[] @relation("ShiftStartedBy")
+  shiftsEnded   Shift[] @relation("ShiftEndedBy")
+
+  loginAttempts LoginAttempt[]
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  username  String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  success   Boolean
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([username, createdAt])
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  products  Product[]
+}
+
+model Product {
+  id         String   @id @default(cuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name       String
+  stockCount Int      @default(0)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  shiftSales          ShiftSale[]
+  shiftStockSnapshots ShiftStockSnapshot[]
+}
+
+enum ShiftStatus {
+  ACTIVE
+  CLOSED
+}
+
+model Shift {
+  id              String      @id @default(cuid())
+  status          ShiftStatus @default(ACTIVE)
+  startedAt       DateTime    @default(now())
+  endedAt         DateTime?
+  startedByUserId String
+  startedByUser   User        @relation("ShiftStartedBy", fields: [startedByUserId], references: [id])
+  endedByUserId   String?
+  endedByUser     User?       @relation("ShiftEndedBy", fields: [endedByUserId], references: [id])
+
+  dayLabel       String?
+  dateRangeLabel String?
+  timeRangeLabel String?
+
+  sales          ShiftSale[]
+  stockSnapshots ShiftStockSnapshot[]
+
+  @@index([status])
+  @@index([endedAt])
+}
+
+model ShiftSale {
+  id                   String   @id @default(cuid())
+  shiftId              String
+  shift                Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  productId            String?
+  product              Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productNameSnapshot  String
+  categoryNameSnapshot String
+  categorySortOrder    Int      @default(0)
+  sortOrder            Int      @default(0)
+  soldCount            Int      @default(0)
+
+  @@unique([shiftId, productId])
+  @@index([shiftId])
+}
+
+model ShiftStockSnapshot {
+  id                   String   @id @default(cuid())
+  shiftId              String
+  shift                Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  productId            String?
+  product              Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productNameSnapshot  String
+  categoryNameSnapshot String
+  categorySortOrder    Int      @default(0)
+  sortOrder            Int      @default(0)
+  stockCountAtClose    Int
+
+  @@unique([shiftId, productId])
+  @@index([shiftId])
+}

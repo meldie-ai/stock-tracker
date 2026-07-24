@@ -1,0 +1,72 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
+import { sellSchema } from "@/lib/validation";
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireAuthenticatedRequest(request);
+  if ("error" in auth) return auth.error;
+
+  const { id: productId } = await params;
+  const body = await request.json().catch(() => null);
+  const parsed = sellSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid quantity" }, { status: 400 });
+  }
+  const { quantity } = parsed.data;
+
+  const activeShift = await prisma.shift.findFirst({
+    where: { status: "ACTIVE" },
+  });
+  if (!activeShift) {
+    return NextResponse.json(
+      { error: "No active shift. Start a shift before recording sales." },
+      { status: 409 }
+    );
+  }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const product = await tx.product.findUnique({
+        where: { id: productId },
+        include: { category: true },
+      });
+      if (!product) throw new Error("NOT_FOUND");
+      if (product.stockCount < quantity) throw new Error("INSUFFICIENT_STOCK");
+
+      const updatedProduct = await tx.product.update({
+        where: { id: productId },
+        data: { stockCount: { decrement: quantity } },
+      });
+
+      const sale = await tx.shiftSale.upsert({
+        where: { shiftId_productId: { shiftId: activeShift.id, productId } },
+        create: {
+          shiftId: activeShift.id,
+          productId,
+          productNameSnapshot: product.name,
+          categoryNameSnapshot: product.category.name,
+          categorySortOrder: product.category.sortOrder,
+          sortOrder: product.sortOrder,
+          soldCount: quantity,
+        },
+        update: { soldCount: { increment: quantity } },
+      });
+
+      return { stockCount: updatedProduct.stockCount, soldCount: sale.soldCount };
+    });
+
+    return NextResponse.json(result);
+  } catch (err) {
+    if (err instanceof Error && err.message === "NOT_FOUND") {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+    if (err instanceof Error && err.message === "INSUFFICIENT_STOCK") {
+      return NextResponse.json({ error: "Not enough stock" }, { status: 400 });
+    }
+    throw err;
+  }
+}
