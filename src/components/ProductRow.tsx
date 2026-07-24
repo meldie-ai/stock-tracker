@@ -27,11 +27,16 @@ export default function ProductRow({
 
   const soldOut = stockCount === 0;
   const lowStock = stockCount > 0 && stockCount <= LOW_STOCK_THRESHOLD;
-  const stockColorClass = soldOut
-    ? "text-red-600 dark:text-red-400"
+  const rowBgClass = soldOut
+    ? "bg-red-50 dark:bg-red-950/40"
     : lowStock
-      ? "text-amber-600 dark:text-amber-400"
-      : "text-green-600 dark:text-green-400";
+      ? "bg-amber-50 dark:bg-amber-950/40"
+      : "bg-green-50 dark:bg-green-950/40";
+  const stockColorClass = soldOut
+    ? "text-red-800 dark:text-red-300"
+    : lowStock
+      ? "text-amber-800 dark:text-amber-300"
+      : "text-green-800 dark:text-green-300";
 
   function handleSell() {
     const quantity = Number(sellQty);
@@ -80,13 +85,7 @@ export default function ProductRow({
   }
 
   return (
-    <div
-      className={
-        soldOut
-          ? "border-b border-zinc-100 dark:border-zinc-900 py-3 last:border-0 opacity-60"
-          : "border-b border-zinc-100 dark:border-zinc-900 py-3 last:border-0"
-      }
-    >
+    <div className={`rounded-lg px-3 py-3 mb-1.5 last:mb-0 ${rowBgClass}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
