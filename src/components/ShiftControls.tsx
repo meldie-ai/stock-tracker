@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import CopyTextButton from "@/components/CopyTextButton";
 
 export default function ShiftControls({
   hasActiveShift,
@@ -50,14 +49,6 @@ export default function ShiftControls({
           <p className="text-sm text-zinc-500 mb-3">
             Shift active since <span className="font-medium">{startedAtLabel}</span>
           </p>
-          <div className="flex flex-wrap gap-2 mb-3">
-            <CopyTextButton label="Copy Products Sold List" fetchUrl="/api/shifts/active/text?kind=SOLD" />
-            <CopyTextButton
-              label="Copy Stock Count List"
-              fetchUrl="/api/shifts/active/text?kind=STOCK"
-              variant="secondary"
-            />
-          </div>
           {!confirmingEnd ? (
             <button
               onClick={() => setConfirmingEnd(true)}

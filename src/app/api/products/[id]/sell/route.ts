@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
 import { sellSchema } from "@/lib/validation";
+import { tryCascadeSinglesFromCarton } from "@/lib/cartonCascade";
 
 export async function POST(
   request: NextRequest,
@@ -42,6 +43,20 @@ export async function POST(
         data: { stockCount: { decrement: quantity } },
       });
 
+      let finalStockCount = updatedProduct.stockCount;
+      const cascade = await tryCascadeSinglesFromCarton(tx, {
+        productName: product.name,
+        categoryName: product.category.name,
+        newStockCount: updatedProduct.stockCount,
+      });
+      if (cascade.cascaded) {
+        const refilled = await tx.product.update({
+          where: { id: productId },
+          data: { stockCount: cascade.singlesStockCount },
+        });
+        finalStockCount = refilled.stockCount;
+      }
+
       const sale = await tx.shiftSale.upsert({
         where: { shiftId_productId: { shiftId: activeShift.id, productId } },
         create: {
@@ -56,7 +71,7 @@ export async function POST(
         update: { soldCount: { increment: quantity } },
       });
 
-      return { stockCount: updatedProduct.stockCount, soldCount: sale.soldCount };
+      return { stockCount: finalStockCount, soldCount: sale.soldCount };
     });
 
     return NextResponse.json(result);

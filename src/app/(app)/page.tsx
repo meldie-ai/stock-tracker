@@ -2,6 +2,7 @@ import { getActiveShift, getCategoriesWithProducts } from "@/lib/data";
 import { formatTime12, formatDateDDMMYY } from "@/lib/dateFormat";
 import ShiftControls from "@/components/ShiftControls";
 import CategorySection from "@/components/CategorySection";
+import CategoryTabs from "@/components/CategoryTabs";
 
 export default async function DashboardPage() {
   const [categories, activeShift] = await Promise.all([
@@ -23,6 +24,7 @@ export default async function DashboardPage() {
   return (
     <div>
       <ShiftControls hasActiveShift={!!activeShift} startedAtLabel={startedAtLabel} />
+      <CategoryTabs categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
 
       {categories.length === 0 ? (
         <p className="text-sm text-zinc-500">
