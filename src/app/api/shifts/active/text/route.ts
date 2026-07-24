@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
+import { getCategoriesWithProducts } from "@/lib/data";
 import { buildShiftText, capitalizeName, type ShiftTextCategory } from "@/lib/textTemplates";
 
 export async function GET(request: NextRequest) {
@@ -20,10 +21,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "No active shift" }, { status: 404 });
   }
 
-  const categoriesWithProducts = await prisma.category.findMany({
-    orderBy: { sortOrder: "asc" },
-    include: { products: { orderBy: { sortOrder: "asc" } } },
-  });
+  const categoriesWithProducts = await getCategoriesWithProducts();
 
   const soldByProductId = new Map(activeShift.sales.map((s) => [s.productId, s.soldCount]));
 

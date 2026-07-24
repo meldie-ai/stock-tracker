@@ -5,7 +5,7 @@ export async function getCategoriesWithProducts() {
   return prisma.category.findMany({
     orderBy: { sortOrder: "asc" },
     include: {
-      products: { orderBy: { sortOrder: "asc" } },
+      products: { orderBy: { name: "asc" } },
     },
   });
 }
@@ -29,9 +29,9 @@ export async function getShiftDetail(shiftId: string) {
   return prisma.shift.findUnique({
     where: { id: shiftId },
     include: {
-      sales: { orderBy: [{ categorySortOrder: "asc" }, { sortOrder: "asc" }] },
+      sales: { orderBy: [{ categorySortOrder: "asc" }, { productNameSnapshot: "asc" }] },
       stockSnapshots: {
-        orderBy: [{ categorySortOrder: "asc" }, { sortOrder: "asc" }],
+        orderBy: [{ categorySortOrder: "asc" }, { productNameSnapshot: "asc" }],
       },
       startedByUser: { select: { username: true } },
     },
