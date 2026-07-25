@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
 
 const LOW_STOCK_THRESHOLD = 3; // easy to adjust; low-stock = 0 < stockCount <= this
 
@@ -46,18 +47,22 @@ export default function ProductRow({
     }
     setError(null);
     startTransition(async () => {
-      const res = await fetch(`/api/products/${productId}/sell`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quantity }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Failed to record sale");
-        return;
+      try {
+        const res = await fetchWithTimeout(`/api/products/${productId}/sell`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ quantity }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(data.error ?? "Failed to record sale");
+          return;
+        }
+        setSellQty("1");
+        router.refresh();
+      } catch (err) {
+        setError(describeFetchError(err));
       }
-      setSellQty("1");
-      router.refresh();
     });
   }
 
@@ -69,18 +74,22 @@ export default function ProductRow({
     }
     setError(null);
     startTransition(async () => {
-      const res = await fetch(`/api/products/${productId}/adjust`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "set", value }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Failed to adjust stock");
-        return;
+      try {
+        const res = await fetchWithTimeout(`/api/products/${productId}/adjust`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: "set", value }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(data.error ?? "Failed to adjust stock");
+          return;
+        }
+        setAdjustOpen(false);
+        router.refresh();
+      } catch (err) {
+        setError(describeFetchError(err));
       }
-      setAdjustOpen(false);
-      router.refresh();
     });
   }
 
