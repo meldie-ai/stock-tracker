@@ -106,7 +106,7 @@ export default function ManageClient({ categories }: { categories: Category[] })
             onChange={(e) => setNewCategoryName(e.target.value)}
             placeholder={"e.g. CARTONS or\nVAPES\nALIBARBAR"}
             rows={1}
-            className="flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-1.5 text-sm resize-y"
+            className="flex-1 min-w-0 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-1.5 text-sm resize-y"
           />
           <button
             onClick={addCategory}
@@ -135,7 +135,7 @@ export default function ManageClient({ categories }: { categories: Category[] })
               onBlur={(e) => {
                 if (e.target.value !== category.name) renameCategory(category.id, e.target.value);
               }}
-              className="flex-1 rounded-md border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 bg-transparent px-2 py-1 text-sm font-bold uppercase tracking-wide resize-y"
+              className="flex-1 min-w-0 rounded-md border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 bg-transparent px-2 py-1 text-sm font-bold uppercase tracking-wide resize-y"
             />
             <button
               onClick={() => deleteCategory(category.id)}
@@ -148,36 +148,38 @@ export default function ManageClient({ categories }: { categories: Category[] })
           {category.products.map((product) => (
             <div
               key={product.id}
-              className="flex items-center gap-2 py-1.5 border-t border-zinc-100 dark:border-zinc-900 first:border-0"
+              className="flex flex-col gap-1.5 py-2 border-t border-zinc-100 dark:border-zinc-900 first:border-0"
             >
               <input
                 defaultValue={product.name}
                 onBlur={(e) => {
                   if (e.target.value !== product.name) renameProduct(product.id, e.target.value);
                 }}
-                className="flex-1 rounded-md border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 bg-transparent px-2 py-1 text-sm"
+                className="w-full rounded-md border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 bg-transparent px-2 py-1 text-sm"
               />
-              <select
-                defaultValue={product.categoryId}
-                onChange={(e) => moveProduct(product.id, e.target.value)}
-                className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-1 py-1 text-xs"
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name.split("\n")[0]}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={() => deleteProduct(product.id)}
-                className="text-xs text-red-500 hover:underline"
-              >
-                Delete
-              </button>
+              <div className="flex items-center gap-2 px-2">
+                <select
+                  defaultValue={product.categoryId}
+                  onChange={(e) => moveProduct(product.id, e.target.value)}
+                  className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-1 py-1 text-xs"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name.split("\n")[0]}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => deleteProduct(product.id)}
+                  className="ml-auto text-xs text-red-500 hover:underline"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
 
-          <div className="flex gap-2 mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
+          <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
             <input
               placeholder="New product name"
               value={newProductByCategory[category.id]?.name ?? ""}
@@ -187,28 +189,30 @@ export default function ManageClient({ categories }: { categories: Category[] })
                   [category.id]: { name: e.target.value, stock: prev[category.id]?.stock ?? "" },
                 }))
               }
-              className="flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
+              className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
             />
-            <input
-              placeholder="Stock"
-              type="number"
-              min={0}
-              value={newProductByCategory[category.id]?.stock ?? ""}
-              onChange={(e) =>
-                setNewProductByCategory((prev) => ({
-                  ...prev,
-                  [category.id]: { name: prev[category.id]?.name ?? "", stock: e.target.value },
-                }))
-              }
-              className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
-            />
-            <button
-              onClick={() => addProduct(category.id)}
-              disabled={isPending}
-              className="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
-            >
-              Add product
-            </button>
+            <div className="flex items-center gap-2">
+              <input
+                placeholder="Stock"
+                type="number"
+                min={0}
+                value={newProductByCategory[category.id]?.stock ?? ""}
+                onChange={(e) =>
+                  setNewProductByCategory((prev) => ({
+                    ...prev,
+                    [category.id]: { name: prev[category.id]?.name ?? "", stock: e.target.value },
+                  }))
+                }
+                className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
+              />
+              <button
+                onClick={() => addProduct(category.id)}
+                disabled={isPending}
+                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
+              >
+                Add product
+              </button>
+            </div>
           </div>
         </section>
       ))}
