@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
+import { notifyStockUpdated } from "@/lib/updateSignal";
 
 const LOW_STOCK_THRESHOLD = 3; // easy to adjust; low-stock = 0 < stockCount <= this
 
@@ -59,6 +60,7 @@ export default function ProductRow({
           return;
         }
         setSellQty("1");
+        notifyStockUpdated();
         router.refresh();
       } catch (err) {
         setError(describeFetchError(err));
@@ -86,6 +88,7 @@ export default function ProductRow({
           return;
         }
         setAdjustOpen(false);
+        notifyStockUpdated();
         router.refresh();
       } catch (err) {
         setError(describeFetchError(err));

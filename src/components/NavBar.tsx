@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import CopyTextButton from "@/components/CopyTextButton";
+import { onStockUpdated } from "@/lib/updateSignal";
+import { formatTime12 } from "@/lib/dateFormat";
 
 const links = [
   { href: "/", label: "Dashboard" },
@@ -16,6 +18,7 @@ export default function NavBar({ username }: { username: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [openedForPathname, setOpenedForPathname] = useState(pathname);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Close the menu when navigation changes the route, without an effect:
   // adjusting state during render is React's recommended pattern for this.
@@ -23,6 +26,8 @@ export default function NavBar({ username }: { username: string }) {
     setOpenedForPathname(pathname);
     if (open) setOpen(false);
   }
+
+  useEffect(() => onStockUpdated(() => setLastUpdated(new Date())), []);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -33,18 +38,22 @@ export default function NavBar({ username }: { username: string }) {
   return (
     <header className="sticky top-0 z-40 h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur">
       <div className="mx-auto flex h-full max-w-3xl items-center justify-between px-4">
-        <button
-          onClick={() => setOpen((o) => !o)}
-          aria-label="Menu"
-          aria-expanded={open}
-          className="flex h-9 w-9 items-center justify-center rounded-md text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-        >
-          <span className="text-xl leading-none">☰</span>
-        </button>
-        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          Stock Tracker
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setOpen((o) => !o)}
+            aria-label="Menu"
+            aria-expanded={open}
+            className="flex h-9 w-9 items-center justify-center rounded-md text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+          >
+            <span className="text-xl leading-none">☰</span>
+          </button>
+          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+            Stock Tracker
+          </span>
+        </div>
+        <span className="text-xs text-zinc-500 tabular-nums">
+          {lastUpdated ? `Updated ${formatTime12(lastUpdated)}` : ""}
         </span>
-        <span className="w-9" />
       </div>
 
       {open && (
