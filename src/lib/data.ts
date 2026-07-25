@@ -10,6 +10,11 @@ export async function getCategoriesWithProducts() {
   });
 }
 
+export async function getLastStockUpdateTime(): Promise<Date | null> {
+  const result = await prisma.product.aggregate({ _max: { updatedAt: true } });
+  return result._max.updatedAt;
+}
+
 export async function getActiveShift() {
   return prisma.shift.findFirst({
     where: { status: "ACTIVE" },

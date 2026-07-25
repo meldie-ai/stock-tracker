@@ -13,12 +13,21 @@ const links = [
   { href: "/history", label: "History" },
 ];
 
-export default function NavBar({ username }: { username: string }) {
+export default function NavBar({
+  username,
+  initialLastUpdated,
+}: {
+  username: string;
+  initialLastUpdated: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [openedForPathname, setOpenedForPathname] = useState(pathname);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(
+    initialLastUpdated ? new Date(initialLastUpdated) : null
+  );
+  const [syncedLastUpdated, setSyncedLastUpdated] = useState(initialLastUpdated);
 
   // Close the menu when navigation changes the route, without an effect:
   // adjusting state during render is React's recommended pattern for this.
@@ -27,6 +36,14 @@ export default function NavBar({ username }: { username: string }) {
     if (open) setOpen(false);
   }
 
+  // initialLastUpdated is the source of truth (survives reloads/backgrounding);
+  // re-sync whenever the layout re-fetches it, e.g. after router.refresh().
+  if (initialLastUpdated !== syncedLastUpdated) {
+    setSyncedLastUpdated(initialLastUpdated);
+    setLastUpdated(initialLastUpdated ? new Date(initialLastUpdated) : null);
+  }
+
+  // Fires instantly on this tab's own sell/adjust, ahead of the server round-trip.
   useEffect(() => onStockUpdated(() => setLastUpdated(new Date())), []);
 
   async function handleLogout() {
