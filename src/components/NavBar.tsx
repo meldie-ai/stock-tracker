@@ -9,6 +9,7 @@ import { formatTime12 } from "@/lib/dateFormat";
 
 const links = [
   { href: "/", label: "Dashboard" },
+  { href: "/lists", label: "Lists" },
   { href: "/manage", label: "Manage" },
   { href: "/history", label: "History" },
 ];

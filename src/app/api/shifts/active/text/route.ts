@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
-import { getCategoriesWithProducts } from "@/lib/data";
-import { buildShiftText, capitalizeName, type ShiftTextCategory } from "@/lib/textTemplates";
+import { categoriesForActiveShift, getCategoriesWithProducts } from "@/lib/data";
+import { buildShiftText, capitalizeName } from "@/lib/textTemplates";
 
 export async function GET(request: NextRequest) {
   const auth = await requireAuthenticatedRequest(request);
@@ -22,19 +22,8 @@ export async function GET(request: NextRequest) {
   }
 
   const categoriesWithProducts = await getCategoriesWithProducts();
-
   const soldByProductId = new Map(activeShift.sales.map((s) => [s.productId, s.soldCount]));
-
-  const categories: ShiftTextCategory[] = categoriesWithProducts.map((category) => ({
-    name: category.name,
-    products: category.products.map((product) => ({
-      name: product.name,
-      value:
-        kind === "STOCK"
-          ? product.stockCount
-          : soldByProductId.get(product.id) ?? 0,
-    })),
-  }));
+  const categories = categoriesForActiveShift(categoriesWithProducts, soldByProductId, kind);
 
   const text = buildShiftText({
     kind,

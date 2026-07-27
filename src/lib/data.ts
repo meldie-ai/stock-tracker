@@ -22,6 +22,21 @@ export async function getActiveShift() {
   });
 }
 
+/** Maps the live catalog + this shift's sale counts into text-template shape for SOLD or STOCK. */
+export function categoriesForActiveShift(
+  categoriesWithProducts: Awaited<ReturnType<typeof getCategoriesWithProducts>>,
+  soldByProductId: Map<string | null, number>,
+  kind: "SOLD" | "STOCK"
+): ShiftTextCategory[] {
+  return categoriesWithProducts.map((category) => ({
+    name: category.name,
+    products: category.products.map((product) => ({
+      name: product.name,
+      value: kind === "STOCK" ? product.stockCount : soldByProductId.get(product.id) ?? 0,
+    })),
+  }));
+}
+
 export async function getClosedShiftsWithinDays(days: number) {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   return prisma.shift.findMany({
