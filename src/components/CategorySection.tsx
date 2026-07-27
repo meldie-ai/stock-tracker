@@ -21,7 +21,7 @@ export default function CategorySection({
   return (
     <section
       id={categoryAnchorId(categoryName)}
-      className="scroll-mt-28 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-4"
+      className="scroll-mt-28 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-6"
     >
       <h2 className="whitespace-pre-line text-sm font-bold uppercase tracking-wide text-zinc-900 dark:text-zinc-50 mb-2">
         {categoryName}
