@@ -35,12 +35,23 @@ export async function tryCascadeSinglesFromCarton(
     return { cascaded: false, singlesStockCount: input.newStockCount };
   }
 
-  const cartonProduct = await tx.product.findFirst({
+  // Compare with both sides trimmed — a bare `equals` (even case-insensitive)
+  // still fails on a stray trailing space or newline in either the category
+  // or product name, e.g. picked up from the multi-line category rename
+  // field. `contains` here is just a cheap DB-side pre-filter; the real
+  // match happens below with both names normalized in application code.
+  const normalizedProductName = input.productName.trim().toUpperCase();
+  const cartonCategoryCandidates = await tx.product.findMany({
     where: {
-      name: { equals: input.productName, mode: "insensitive" },
-      category: { name: { equals: CARTONS_CATEGORY_NAME, mode: "insensitive" } },
+      category: { name: { contains: CARTONS_CATEGORY_NAME, mode: "insensitive" } },
     },
+    include: { category: true },
   });
+  const cartonProduct = cartonCategoryCandidates.find(
+    (p) =>
+      p.category.name.trim().toUpperCase() === CARTONS_CATEGORY_NAME &&
+      p.name.trim().toUpperCase() === normalizedProductName
+  );
 
   if (!cartonProduct || cartonProduct.stockCount <= 0) {
     return { cascaded: false, singlesStockCount: 0 };
