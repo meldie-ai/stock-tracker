@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import CopyTextButton from "@/components/CopyTextButton";
 import { onStockUpdated } from "@/lib/updateSignal";
 import { formatTime12 } from "@/lib/dateFormat";
 
 const links = [
   { href: "/", label: "Dashboard" },
-  { href: "/lists", label: "Lists" },
+  { href: "/stock-count", label: "Stock Count" },
+  { href: "/products-sold", label: "Products Sold" },
   { href: "/manage", label: "Manage" },
   { href: "/history", label: "History" },
 ];
@@ -96,18 +96,6 @@ export default function NavBar({
                 </Link>
               ))}
             </nav>
-
-            <div className="flex flex-col gap-2 border-t border-zinc-100 dark:border-zinc-900 pt-3 mb-3">
-              <CopyTextButton
-                label="Copy Products Sold List"
-                fetchUrl="/api/shifts/active/text?kind=SOLD"
-              />
-              <CopyTextButton
-                label="Copy Stock Count List"
-                fetchUrl="/api/shifts/active/text?kind=STOCK"
-                variant="secondary"
-              />
-            </div>
 
             <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-900 pt-3">
               <span className="text-sm text-zinc-500">{username}</span>

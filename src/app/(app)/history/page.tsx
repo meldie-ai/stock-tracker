@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { getClosedShiftsWithinDays } from "@/lib/data";
-import CopyTextButton from "@/components/CopyTextButton";
+import { formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
 
 const HISTORY_RETENTION_DAYS = 7;
 
@@ -19,28 +20,19 @@ export default async function HistoryPage() {
         <p className="text-sm text-zinc-500">No closed shifts yet.</p>
       ) : (
         shifts.map((shift) => (
-          <section
+          <Link
             key={shift.id}
-            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-3"
+            href={`/history/${shift.id}`}
+            className="block rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-3 hover:border-zinc-300 dark:hover:border-zinc-700"
           >
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-              {shift.dayLabel}
+              {formatDateDDMMYY(shift.startedAt)} {formatTime12(shift.startedAt)}
+              {" – "}
+              {shift.endedAt &&
+                `${formatDateDDMMYY(shift.endedAt)} ${formatTime12(shift.endedAt)}`}
             </p>
-            <p className="text-xs text-zinc-500 mb-3">
-              {shift.dateRangeLabel} · {shift.timeRangeLabel}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <CopyTextButton
-                label="Copy Products Sold List"
-                fetchUrl={`/api/shifts/${shift.id}/text?kind=SOLD`}
-              />
-              <CopyTextButton
-                label="Copy Stock Count List"
-                fetchUrl={`/api/shifts/${shift.id}/text?kind=STOCK`}
-                variant="secondary"
-              />
-            </div>
-          </section>
+            <p className="text-xs text-zinc-500">View sold &amp; stock breakdown</p>
+          </Link>
         ))
       )}
     </div>

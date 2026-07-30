@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
-import { dayPartLabel, formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuthenticatedRequest(request);
@@ -13,9 +12,6 @@ export async function POST(request: NextRequest) {
   }
 
   const endedAt = new Date();
-  const dayLabel = `${dayPartLabel(activeShift.startedAt)} - ${dayPartLabel(endedAt)}`;
-  const dateRangeLabel = `${formatDateDDMMYY(activeShift.startedAt)} - ${formatDateDDMMYY(endedAt)}`;
-  const timeRangeLabel = `${formatTime12(activeShift.startedAt)}-${formatTime12(endedAt)}`;
 
   const [products, existingSales] = await Promise.all([
     prisma.product.findMany({ include: { category: true } }),
@@ -64,9 +60,6 @@ export async function POST(request: NextRequest) {
             status: "CLOSED",
             endedAt,
             endedByUserId: auth.user.userId,
-            dayLabel,
-            dateRangeLabel,
-            timeRangeLabel,
           },
         });
       },
