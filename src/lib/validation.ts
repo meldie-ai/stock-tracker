@@ -43,3 +43,8 @@ export const createStaffSchema = z.object({
 export const resetPasswordSchema = z.object({
   password: z.string().min(8).max(200),
 });
+
+export const priceSchema = z.object({
+  priceCents: z.number().int().min(0).max(1_000_000).nullable().optional(),
+  dealNote: z.string().trim().max(60).nullable().optional(),
+});

@@ -63,6 +63,12 @@ model Product {
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   name       String
   stockCount Int      @default(0)
+  // Selling price in cents (not a float) to avoid currency rounding bugs.
+  // Nullable: existing/new products start with no price set.
+  priceCents Int?
+  // Plain text bundle note (e.g. "3 for $50") — not a calculated price
+  // override, so it does not affect the automatic revenue total.
+  dealNote   String?
   sortOrder  Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -81,6 +87,7 @@ enum AuditAction {
   SELL
   ADJUST
   CASCADE
+  PRICE_CHANGE
 }
 
 model AuditLog {

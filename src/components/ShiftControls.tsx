@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 export default function ShiftControls({
   hasActiveShift,
   startedAtLabel,
+  revenueCents,
 }: {
   hasActiveShift: boolean;
   startedAtLabel: string | null;
+  revenueCents: number | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -46,9 +48,14 @@ export default function ShiftControls({
     <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-6">
       {hasActiveShift ? (
         <>
-          <p className="text-sm text-zinc-500 mb-3">
+          <p className="text-sm text-zinc-500 mb-1">
             Shift active since <span className="font-medium">{startedAtLabel}</span>
           </p>
+          {revenueCents !== null && (
+            <p className="text-sm text-zinc-500 mb-3">
+              Total sold: <span className="font-medium">${(revenueCents / 100).toFixed(2)}</span>
+            </p>
+          )}
           {!confirmingEnd ? (
             <button
               onClick={() => setConfirmingEnd(true)}

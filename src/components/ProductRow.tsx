@@ -7,24 +7,37 @@ import { notifyStockUpdated } from "@/lib/updateSignal";
 
 const LOW_STOCK_THRESHOLD = 3; // easy to adjust; low-stock = 0 < stockCount <= this
 
+function formatPrice(priceCents: number): string {
+  return `$${(priceCents / 100).toFixed(2)}`;
+}
+
 export default function ProductRow({
   productId,
   name,
   stockCount,
   soldCount,
   hasActiveShift,
+  priceCents,
+  dealNote,
 }: {
   productId: string;
   name: string;
   stockCount: number;
   soldCount: number | null;
   hasActiveShift: boolean;
+  priceCents: number | null;
+  dealNote: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [sellQty, setSellQty] = useState("1");
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustValue, setAdjustValue] = useState(String(stockCount));
+  const [priceOpen, setPriceOpen] = useState(false);
+  const [priceValue, setPriceValue] = useState(
+    priceCents !== null ? (priceCents / 100).toFixed(2) : ""
+  );
+  const [dealNoteValue, setDealNoteValue] = useState(dealNote ?? "");
   const [error, setError] = useState<string | null>(null);
 
   const soldOut = stockCount === 0;
@@ -96,6 +109,38 @@ export default function ProductRow({
     });
   }
 
+  function handlePriceSave() {
+    const trimmed = priceValue.trim();
+    let nextPriceCents: number | null = null;
+    if (trimmed !== "") {
+      const dollars = Number(trimmed);
+      if (!Number.isFinite(dollars) || dollars < 0) {
+        setError("Enter a price of 0 or more");
+        return;
+      }
+      nextPriceCents = Math.round(dollars * 100);
+    }
+    setError(null);
+    startTransition(async () => {
+      try {
+        const res = await fetchWithTimeout(`/api/products/${productId}/price`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ priceCents: nextPriceCents, dealNote: dealNoteValue.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(data.error ?? "Failed to save price");
+          return;
+        }
+        setPriceOpen(false);
+        router.refresh();
+      } catch (err) {
+        setError(describeFetchError(err));
+      }
+    });
+  }
+
   return (
     <div className={`rounded-lg px-3 py-3 mb-1.5 last:mb-0 ${rowBgClass}`}>
       <div className="flex items-center justify-between gap-3">
@@ -111,6 +156,8 @@ export default function ProductRow({
                 · Sold this shift: <span className="font-semibold">{soldCount ?? 0}</span>
               </>
             )}
+            {priceCents !== null && <> · {formatPrice(priceCents)}</>}
+            {dealNote && <> · {dealNote}</>}
           </p>
         </div>
 
@@ -169,6 +216,54 @@ export default function ProductRow({
             </button>
             <button
               onClick={() => setAdjustOpen(false)}
+              className="text-xs text-zinc-400 hover:text-zinc-600"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-1">
+        {!priceOpen ? (
+          <button
+            onClick={() => {
+              setPriceValue(priceCents !== null ? (priceCents / 100).toFixed(2) : "");
+              setDealNoteValue(dealNote ?? "");
+              setPriceOpen(true);
+            }}
+            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+          >
+            Edit price &amp; deal
+          </button>
+        ) : (
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+            <span className="text-xs text-zinc-500">$</span>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              placeholder="Price"
+              value={priceValue}
+              onChange={(e) => setPriceValue(e.target.value)}
+              className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
+            />
+            <input
+              type="text"
+              placeholder="Deal note, e.g. 3 for $50"
+              value={dealNoteValue}
+              onChange={(e) => setDealNoteValue(e.target.value)}
+              className="min-w-[140px] flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
+            />
+            <button
+              onClick={handlePriceSave}
+              disabled={isPending}
+              className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => setPriceOpen(false)}
               className="text-xs text-zinc-400 hover:text-zinc-600"
             >
               Cancel

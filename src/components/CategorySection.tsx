@@ -5,6 +5,8 @@ type Product = {
   id: string;
   name: string;
   stockCount: number;
+  priceCents: number | null;
+  dealNote: string | null;
 };
 
 export default function CategorySection({
@@ -37,6 +39,8 @@ export default function CategorySection({
             stockCount={product.stockCount}
             soldCount={soldByProductId.get(product.id) ?? null}
             hasActiveShift={hasActiveShift}
+            priceCents={product.priceCents}
+            dealNote={product.dealNote}
           />
         ))
       )}
