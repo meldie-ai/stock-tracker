@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client";
+import { recordAuditEntry } from "@/lib/auditLog";
 
 export const PACK_SIZE = 10;
 
@@ -9,6 +10,9 @@ export type CascadeCheckInput = {
   productName: string;
   categoryName: string;
   newStockCount: number;
+  userId: string;
+  usernameSnapshot: string;
+  shiftId?: string | null;
 };
 
 export type CascadeCheckResult = {
@@ -60,6 +64,20 @@ export async function tryCascadeSinglesFromCarton(
   await tx.product.update({
     where: { id: cartonProduct.id },
     data: { stockCount: { decrement: 1 } },
+  });
+
+  await recordAuditEntry(tx, {
+    action: "CASCADE",
+    userId: input.userId,
+    usernameSnapshot: input.usernameSnapshot,
+    productId: cartonProduct.id,
+    productNameSnapshot: cartonProduct.name,
+    categoryNameSnapshot: cartonProduct.category.name,
+    quantityDelta: -1,
+    stockBefore: cartonProduct.stockCount,
+    stockAfter: cartonProduct.stockCount - 1,
+    shiftId: input.shiftId,
+    note: `Auto-decremented: 1 carton consumed to refill SINGLES stock of "${input.productName}"`,
   });
 
   return { cascaded: true, singlesStockCount: PACK_SIZE };

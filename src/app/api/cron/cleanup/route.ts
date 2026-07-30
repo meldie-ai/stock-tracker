@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 const RETENTION_DAYS = 7;
+const AUDIT_LOG_RETENTION_DAYS = 14;
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -9,10 +10,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
-  const result = await prisma.shift.deleteMany({
-    where: { status: "CLOSED", endedAt: { lt: cutoff } },
-  });
+  const shiftCutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  const auditCutoff = new Date(Date.now() - AUDIT_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000);
 
-  return NextResponse.json({ deletedShifts: result.count });
+  const [shiftResult, auditResult] = await Promise.all([
+    prisma.shift.deleteMany({ where: { status: "CLOSED", endedAt: { lt: shiftCutoff } } }),
+    prisma.auditLog.deleteMany({ where: { createdAt: { lt: auditCutoff } } }),
+  ]);
+
+  return NextResponse.json({
+    deletedShifts: shiftResult.count,
+    deletedAuditLogEntries: auditResult.count,
+  });
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser, type SessionData } from "@/lib/session";
+import { getCurrentUser, type CurrentUser } from "@/lib/session";
 import { isSameOrigin } from "@/lib/csrf";
 
 export function getClientIp(request: NextRequest): string | null {
@@ -9,13 +9,14 @@ export function getClientIp(request: NextRequest): string | null {
 }
 
 /**
- * Guards a mutating API route: requires a valid session AND a same-origin
- * request. Every non-login, non-cron route handler should call this first.
+ * Guards a mutating API route: requires a valid, non-deactivated session AND
+ * a same-origin request. Every non-login, non-cron route handler should call
+ * this first.
  */
 export async function requireAuthenticatedRequest(
   request: NextRequest
-): Promise<{ user: SessionData } | { error: NextResponse }> {
-  const user = await getSessionUser();
+): Promise<{ user: CurrentUser } | { error: NextResponse }> {
+  const user = await getCurrentUser();
   if (!user) {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
@@ -26,4 +27,16 @@ export async function requireAuthenticatedRequest(
   }
 
   return { user };
+}
+
+/** Like requireAuthenticatedRequest, but also requires role === "ADMIN". */
+export async function requireAdminRequest(
+  request: NextRequest
+): Promise<{ user: CurrentUser } | { error: NextResponse }> {
+  const auth = await requireAuthenticatedRequest(request);
+  if ("error" in auth) return auth;
+  if (auth.user.role !== "ADMIN") {
+    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+  }
+  return auth;
 }

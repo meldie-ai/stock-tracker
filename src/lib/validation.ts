@@ -34,3 +34,12 @@ export const updateProductSchema = z.object({
   categoryId: z.string().min(1).optional(),
   sortOrder: z.number().int().optional(),
 });
+
+export const createStaffSchema = z.object({
+  username: z.string().trim().min(1).max(100),
+  password: z.string().min(8).max(200),
+});
+
+export const resetPasswordSchema = z.object({
+  password: z.string().min(8).max(200),
+});

@@ -82,10 +82,10 @@ async function seedAdminUser() {
   const passwordHash = await bcrypt.hash(password, 12);
   const user = await prisma.user.upsert({
     where: { username: username.toLowerCase() },
-    update: { passwordHash },
-    create: { username: username.toLowerCase(), passwordHash },
+    update: { passwordHash, role: "ADMIN" },
+    create: { username: username.toLowerCase(), passwordHash, role: "ADMIN" },
   });
-  console.log(`Seeded user "${user.username}".`);
+  console.log(`Seeded user "${user.username}" (role: ${user.role}).`);
 }
 
 async function seedStarterCatalog() {

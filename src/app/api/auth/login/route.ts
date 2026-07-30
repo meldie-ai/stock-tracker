@@ -29,7 +29,8 @@ export async function POST(request: NextRequest) {
     where: { username: normalizedUsername },
   });
 
-  const valid = user ? await verifyPassword(password, user.passwordHash) : false;
+  const valid =
+    user && !user.deactivatedAt ? await verifyPassword(password, user.passwordHash) : false;
 
   await recordLoginAttempt({
     username: normalizedUsername,

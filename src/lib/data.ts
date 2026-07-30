@@ -58,6 +58,30 @@ export async function getShiftDetail(shiftId: string) {
   });
 }
 
+export async function getAllUsers() {
+  return prisma.user.findMany({
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      username: true,
+      role: true,
+      deactivatedAt: true,
+      lastLoginAt: true,
+      createdAt: true,
+    },
+  });
+}
+
+export async function getAuditLog(filters: { userId?: string; productId?: string }) {
+  return prisma.auditLog.findMany({
+    where: {
+      userId: filters.userId,
+      productId: filters.productId,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 /** Groups flat (category, product, value) rows back into categories, preserving DB order. */
 export function groupByCategory(
   rows: { categoryNameSnapshot: string; productNameSnapshot: string; value: number }[]

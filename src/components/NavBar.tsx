@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { onStockUpdated } from "@/lib/updateSignal";
 import { formatTime12 } from "@/lib/dateFormat";
+import type { Role } from "@/generated/prisma/client";
 
 const links = [
   { href: "/", label: "Dashboard" },
@@ -14,11 +15,18 @@ const links = [
   { href: "/history", label: "History" },
 ];
 
+const adminLinks = [
+  { href: "/admin/staff", label: "Staff" },
+  { href: "/admin/audit", label: "Audit Log" },
+];
+
 export default function NavBar({
   username,
+  role,
   initialLastUpdated,
 }: {
   username: string;
+  role: Role;
   initialLastUpdated: string | null;
 }) {
   const pathname = usePathname();
@@ -95,6 +103,20 @@ export default function NavBar({
                   {link.label}
                 </Link>
               ))}
+              {role === "ADMIN" &&
+                adminLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={
+                      pathname === link.href
+                        ? "rounded-md px-2 py-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
+                        : "rounded-md px-2 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                    }
+                  >
+                    {link.label}
+                  </Link>
+                ))}
             </nav>
 
             <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-900 pt-3">

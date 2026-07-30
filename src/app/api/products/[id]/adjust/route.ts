@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
 import { adjustSchema } from "@/lib/validation";
 import { tryCascadeSinglesFromCarton } from "@/lib/cartonCascade";
+import { recordAuditEntry } from "@/lib/auditLog";
 
 export async function POST(
   request: NextRequest,
@@ -18,6 +19,11 @@ export async function POST(
     return NextResponse.json({ error: "Invalid value" }, { status: 400 });
   }
   const { mode, value } = parsed.data;
+
+  const activeShift = await prisma.shift.findFirst({
+    where: { status: "ACTIVE" },
+    select: { id: true },
+  });
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -35,11 +41,28 @@ export async function POST(
         data: { stockCount: nextStock },
       });
 
+      await recordAuditEntry(tx, {
+        action: "ADJUST",
+        userId: auth.user.userId,
+        usernameSnapshot: auth.user.username,
+        productId: product.id,
+        productNameSnapshot: product.name,
+        categoryNameSnapshot: product.category.name,
+        quantityDelta: updated.stockCount - product.stockCount,
+        stockBefore: product.stockCount,
+        stockAfter: updated.stockCount,
+        shiftId: activeShift?.id ?? null,
+        note: `mode=${mode} value=${value}`,
+      });
+
       let finalStockCount = updated.stockCount;
       const cascade = await tryCascadeSinglesFromCarton(tx, {
         productName: product.name,
         categoryName: product.category.name,
         newStockCount: updated.stockCount,
+        userId: auth.user.userId,
+        usernameSnapshot: auth.user.username,
+        shiftId: activeShift?.id ?? null,
       });
       if (cascade.cascaded) {
         const refilled = await tx.product.update({
@@ -47,6 +70,20 @@ export async function POST(
           data: { stockCount: cascade.singlesStockCount },
         });
         finalStockCount = refilled.stockCount;
+
+        await recordAuditEntry(tx, {
+          action: "CASCADE",
+          userId: auth.user.userId,
+          usernameSnapshot: auth.user.username,
+          productId: product.id,
+          productNameSnapshot: product.name,
+          categoryNameSnapshot: product.category.name,
+          quantityDelta: refilled.stockCount,
+          stockBefore: 0,
+          stockAfter: refilled.stockCount,
+          shiftId: activeShift?.id ?? null,
+          note: "Auto-refilled from matching CARTONS product",
+        });
       }
 
       return { stockCount: finalStockCount };

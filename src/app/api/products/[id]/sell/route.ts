@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
 import { sellSchema } from "@/lib/validation";
 import { tryCascadeSinglesFromCarton } from "@/lib/cartonCascade";
+import { recordAuditEntry } from "@/lib/auditLog";
 
 export async function POST(
   request: NextRequest,
@@ -43,11 +44,27 @@ export async function POST(
         data: { stockCount: { decrement: quantity } },
       });
 
+      await recordAuditEntry(tx, {
+        action: "SELL",
+        userId: auth.user.userId,
+        usernameSnapshot: auth.user.username,
+        productId: product.id,
+        productNameSnapshot: product.name,
+        categoryNameSnapshot: product.category.name,
+        quantityDelta: -quantity,
+        stockBefore: product.stockCount,
+        stockAfter: updatedProduct.stockCount,
+        shiftId: activeShift.id,
+      });
+
       let finalStockCount = updatedProduct.stockCount;
       const cascade = await tryCascadeSinglesFromCarton(tx, {
         productName: product.name,
         categoryName: product.category.name,
         newStockCount: updatedProduct.stockCount,
+        userId: auth.user.userId,
+        usernameSnapshot: auth.user.username,
+        shiftId: activeShift.id,
       });
       if (cascade.cascaded) {
         const refilled = await tx.product.update({
@@ -55,6 +72,20 @@ export async function POST(
           data: { stockCount: cascade.singlesStockCount },
         });
         finalStockCount = refilled.stockCount;
+
+        await recordAuditEntry(tx, {
+          action: "CASCADE",
+          userId: auth.user.userId,
+          usernameSnapshot: auth.user.username,
+          productId: product.id,
+          productNameSnapshot: product.name,
+          categoryNameSnapshot: product.category.name,
+          quantityDelta: refilled.stockCount,
+          stockBefore: 0,
+          stockAfter: refilled.stockCount,
+          shiftId: activeShift.id,
+          note: "Auto-refilled from matching CARTONS product",
+        });
       }
 
       const sale = await tx.shiftSale.upsert({

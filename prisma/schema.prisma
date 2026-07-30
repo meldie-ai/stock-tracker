@@ -9,17 +9,32 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  ADMIN
+  STAFF
+}
+
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  lastLoginAt  DateTime?
+  id                String    @id @default(cuid())
+  username          String    @unique
+  passwordHash      String
+  role              Role      @default(STAFF)
+  // Soft-delete: the app never hard-deletes a User row (shift history and
+  // audit log entries must stay intact after someone quits), so
+  // Shift.startedByUserId's ON DELETE RESTRICT is never exercised.
+  deactivatedAt     DateTime?
+  // Bumped on every admin-driven password reset so an already-issued
+  // session cookie (SessionData.issuedAt) can be invalidated immediately,
+  // instead of staying valid until it naturally expires.
+  passwordChangedAt DateTime?
+  createdAt         DateTime  @default(now())
+  lastLoginAt       DateTime?
 
   shiftsStarted Shift[] @relation("ShiftStartedBy")
   shiftsEnded   Shift[] @relation("ShiftEndedBy")
 
   loginAttempts LoginAttempt[]
+  auditLogs     AuditLog[]
 }
 
 model LoginAttempt {
@@ -54,11 +69,46 @@ model Product {
 
   shiftSales          ShiftSale[]
   shiftStockSnapshots ShiftStockSnapshot[]
+  auditLogs           AuditLog[]
 }
 
 enum ShiftStatus {
   ACTIVE
   CLOSED
+}
+
+enum AuditAction {
+  SELL
+  ADJUST
+  CASCADE
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  createdAt DateTime    @default(now())
+  action    AuditAction
+
+  userId           String?
+  user             User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  usernameSnapshot String
+
+  productId            String?
+  product              Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productNameSnapshot  String
+  categoryNameSnapshot String
+
+  quantityDelta Int
+  stockBefore   Int
+  stockAfter    Int
+
+  // Informational only, no FK: Shift rows purge at 7 days but AuditLog
+  // lives 14, so a real relation would go stale for half the row's life.
+  shiftId String?
+  note    String?
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([productId])
 }
 
 model Shift {
