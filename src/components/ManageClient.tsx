@@ -21,6 +21,11 @@ export default function ManageClient({ categories }: { categories: Category[] })
     Record<string, { name: string; stock: string }>
   >({});
 
+  // The "refills from" link only ever makes sense for a Singles product
+  // pointing at its Cartons counterpart — not shown at all for other
+  // categories, and only Cartons products are offered as options.
+  const cartonsCategory = categories.find((c) => c.name.trim().toUpperCase() === "CARTONS");
+
   function run(action: () => Promise<Response>) {
     setError(null);
     startTransition(async () => {
@@ -192,27 +197,23 @@ export default function ManageClient({ categories }: { categories: Category[] })
                   Delete
                 </button>
               </div>
-              <div className="flex items-center gap-2 px-2">
-                <span className="text-xs text-zinc-400">Refills from:</span>
-                <select
-                  defaultValue={product.linkedCartonProductId ?? ""}
-                  onChange={(e) => linkProduct(product.id, e.target.value)}
-                  className="min-w-0 flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-1 py-1 text-xs"
-                >
-                  <option value="">None (no auto-refill)</option>
-                  {categories.map((c) => (
-                    <optgroup key={c.id} label={c.name.split("\n")[0]}>
-                      {c.products
-                        .filter((p) => p.id !== product.id)
-                        .map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
+              {category.name.trim().toUpperCase() === "SINGLES" && cartonsCategory && (
+                <div className="flex items-center gap-2 px-2">
+                  <span className="text-xs text-zinc-400">Refills from:</span>
+                  <select
+                    defaultValue={product.linkedCartonProductId ?? ""}
+                    onChange={(e) => linkProduct(product.id, e.target.value)}
+                    className="min-w-0 flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-1 py-1 text-xs"
+                  >
+                    <option value="">None (no auto-refill)</option>
+                    {cartonsCategory.products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           ))}
 
