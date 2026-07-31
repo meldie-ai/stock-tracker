@@ -55,6 +55,15 @@ export default function NavBar({
   // Fires instantly on this tab's own sell/adjust, ahead of the server round-trip.
   useEffect(() => onStockUpdated(() => setLastUpdated(new Date())), []);
 
+  // Scrolling the page is a stronger dismiss signal than requiring a tap on
+  // touch devices, which have no hover to close the menu with otherwise.
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, { passive: true });
+    return () => window.removeEventListener("scroll", close);
+  }, [open]);
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.replace("/login");
@@ -90,7 +99,10 @@ export default function NavBar({
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute left-4 top-full z-50 mt-1 w-64 rounded-xl border border-black/10 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950 backdrop-blur-xl backdrop-saturate-150 p-3 shadow-lg">
+          <div
+            onMouseLeave={() => setOpen(false)}
+            className="absolute left-4 top-full z-50 mt-1 w-64 rounded-xl border border-black/10 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950 backdrop-blur-xl backdrop-saturate-150 p-3 shadow-lg"
+          >
             <nav className="flex flex-col mb-3">
               {links.map((link) => (
                 <Link
