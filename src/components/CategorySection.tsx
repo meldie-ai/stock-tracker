@@ -1,6 +1,5 @@
 import ProductRow from "@/components/ProductRow";
 import CategoryPriceEditor from "@/components/CategoryPriceEditor";
-import { categoryAnchorId } from "@/lib/slug";
 
 type Product = {
   id: string;
@@ -33,10 +32,7 @@ export default function CategorySection({
   const hasCategoryPrice = categoryCashPriceCents !== null || categoryCardPriceCents !== null;
 
   return (
-    <section
-      id={categoryAnchorId(categoryName)}
-      className="scroll-mt-28 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-16"
-    >
+    <section className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-16">
       <h2 className="whitespace-pre-line text-sm font-bold uppercase tracking-wide text-zinc-900 dark:text-zinc-50 mb-2">
         {categoryName}
       </h2>
