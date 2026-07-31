@@ -19,6 +19,9 @@ export default async function AdminLayout({
         <Link href="/admin/audit" className="text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-50">
           Audit Log
         </Link>
+        <Link href="/admin/reports" className="text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-50">
+          Weekly Report
+        </Link>
       </nav>
       {children}
     </div>
