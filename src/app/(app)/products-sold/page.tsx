@@ -1,6 +1,8 @@
 import { categoriesForActiveShift, getActiveShift, getCategoriesWithProducts } from "@/lib/data";
 import { formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
+import { buildCategoriesCopyText } from "@/lib/shiftCopyText";
 import ShiftBreakdown from "@/components/ShiftBreakdown";
+import CopyButton from "@/components/CopyButton";
 
 export default async function ProductsSoldPage() {
   const [activeShift, categoriesWithProducts] = await Promise.all([
@@ -19,23 +21,38 @@ export default async function ProductsSoldPage() {
           No active shift. Start a shift on the Dashboard to see live sold counts here.
         </p>
       ) : (
-        <>
-          <p className="text-sm text-zinc-500 mb-4">
-            Shift active since{" "}
-            <span className="font-medium">
-              {formatDateDDMMYY(activeShift.startedAt)} {formatTime12(activeShift.startedAt)}
-            </span>{" "}
-            &middot; Started by <span className="font-medium">{activeShift.startedByUser.username}</span>
-          </p>
-          <ShiftBreakdown
-            kind="SOLD"
-            categories={categoriesForActiveShift(
-              categoriesWithProducts,
-              new Map(activeShift.sales.map((s) => [s.productId, s.soldCount])),
-              "SOLD"
-            )}
-          />
-        </>
+        (() => {
+          const categories = categoriesForActiveShift(
+            categoriesWithProducts,
+            new Map(activeShift.sales.map((s) => [s.productId, s.soldCount])),
+            "SOLD"
+          );
+          return (
+            <>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <p className="text-sm text-zinc-500">
+                  Shift active since{" "}
+                  <span className="font-medium">
+                    {formatDateDDMMYY(activeShift.startedAt)} {formatTime12(activeShift.startedAt)}
+                  </span>{" "}
+                  &middot; Started by{" "}
+                  <span className="font-medium">{activeShift.startedByUser.username}</span>
+                </p>
+                <CopyButton
+                  text={buildCategoriesCopyText(
+                    [
+                      "Products Sold",
+                      `Shift active since ${formatDateDDMMYY(activeShift.startedAt)} ${formatTime12(activeShift.startedAt)}`,
+                      `Started by ${activeShift.startedByUser.username}`,
+                    ],
+                    categories
+                  )}
+                />
+              </div>
+              <ShiftBreakdown kind="SOLD" categories={categories} />
+            </>
+          );
+        })()
       )}
     </div>
   );

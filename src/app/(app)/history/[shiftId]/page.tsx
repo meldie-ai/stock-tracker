@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { getShiftDetail, groupByCategory } from "@/lib/data";
 import { formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
+import { buildShiftReportCopyText } from "@/lib/shiftCopyText";
 import ShiftBreakdown from "@/components/ShiftBreakdown";
+import CopyButton from "@/components/CopyButton";
 
 export default async function ShiftDetailPage({
   params,
@@ -29,15 +31,36 @@ export default async function ShiftDetailPage({
     }))
   );
 
+  const dateRangeLabel = `${formatDateDDMMYY(shift.startedAt)} ${formatTime12(shift.startedAt)} – ${formatDateDDMMYY(shift.endedAt)} ${formatTime12(shift.endedAt)}`;
+
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-1">
-        Shift details
-      </h1>
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Shift details</h1>
+        <CopyButton
+          text={buildShiftReportCopyText(
+            [
+              "Shift Report",
+              dateRangeLabel,
+              `Started by ${shift.startedByUser.username}`,
+              ...(shift.endedByUser ? [`Ended by ${shift.endedByUser.username}`] : []),
+            ],
+            [
+              { heading: "Products Sold", categories: soldCategories },
+              { heading: "Stock Count", categories: stockCategories },
+            ]
+          )}
+        />
+      </div>
+      <p className="text-sm text-zinc-500 mb-1">{dateRangeLabel}</p>
       <p className="text-sm text-zinc-500 mb-6">
-        {formatDateDDMMYY(shift.startedAt)} {formatTime12(shift.startedAt)}
-        {" – "}
-        {formatDateDDMMYY(shift.endedAt)} {formatTime12(shift.endedAt)}
+        Started by <span className="font-medium">{shift.startedByUser.username}</span>
+        {shift.endedByUser && (
+          <>
+            {" "}
+            &middot; Ended by <span className="font-medium">{shift.endedByUser.username}</span>
+          </>
+        )}
       </p>
 
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">

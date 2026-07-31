@@ -54,6 +54,7 @@ export async function getShiftDetail(shiftId: string) {
         orderBy: [{ categorySortOrder: "asc" }, { productNameSnapshot: "asc" }],
       },
       startedByUser: { select: { username: true } },
+      endedByUser: { select: { username: true } },
     },
   });
 }
