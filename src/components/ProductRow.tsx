@@ -157,10 +157,20 @@ export default function ProductRow({
               </>
             )}
             {showPriceEditor && cashPriceCents !== null && (
-              <> · Cash {formatPrice(cashPriceCents)}</>
+              <>
+                {" · "}
+                <span className="font-semibold text-red-600 dark:text-red-400">
+                  Cash {formatPrice(cashPriceCents)}
+                </span>
+              </>
             )}
             {showPriceEditor && cardPriceCents !== null && (
-              <> · Card {formatPrice(cardPriceCents)}</>
+              <>
+                {" · "}
+                <span className="font-semibold text-red-600 dark:text-red-400">
+                  Card {formatPrice(cardPriceCents)}
+                </span>
+              </>
             )}
             {showPriceEditor && dealNote && <> · {dealNote}</>}
           </p>

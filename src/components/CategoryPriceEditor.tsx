@@ -62,9 +62,17 @@ export default function CategoryPriceEditor({
     <div className="mb-2">
       {hasPrice && (
         <p className="text-xs text-zinc-500 mb-1">
-          {cashPriceCents !== null && <>Cash {formatPrice(cashPriceCents)} each</>}
+          {cashPriceCents !== null && (
+            <span className="font-semibold text-red-600 dark:text-red-400">
+              Cash {formatPrice(cashPriceCents)} each
+            </span>
+          )}
           {cashPriceCents !== null && cardPriceCents !== null && " · "}
-          {cardPriceCents !== null && <>Card {formatPrice(cardPriceCents)} each</>}
+          {cardPriceCents !== null && (
+            <span className="font-semibold text-red-600 dark:text-red-400">
+              Card {formatPrice(cardPriceCents)} each
+            </span>
+          )}
           {dealNote && <> · {dealNote}</>}
         </p>
       )}
