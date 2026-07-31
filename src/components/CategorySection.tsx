@@ -6,14 +6,16 @@ type Product = {
   id: string;
   name: string;
   stockCount: number;
-  priceCents: number | null;
+  cashPriceCents: number | null;
+  cardPriceCents: number | null;
   dealNote: string | null;
 };
 
 export default function CategorySection({
   categoryId,
   categoryName,
-  categoryPriceCents,
+  categoryCashPriceCents,
+  categoryCardPriceCents,
   categoryDealNote,
   products,
   soldByProductId,
@@ -21,13 +23,14 @@ export default function CategorySection({
 }: {
   categoryId: string;
   categoryName: string;
-  categoryPriceCents: number | null;
+  categoryCashPriceCents: number | null;
+  categoryCardPriceCents: number | null;
   categoryDealNote: string | null;
   products: Product[];
   soldByProductId: Map<string, number>;
   hasActiveShift: boolean;
 }) {
-  const hasCategoryPrice = categoryPriceCents !== null;
+  const hasCategoryPrice = categoryCashPriceCents !== null || categoryCardPriceCents !== null;
 
   return (
     <section
@@ -39,7 +42,8 @@ export default function CategorySection({
       </h2>
       <CategoryPriceEditor
         categoryId={categoryId}
-        priceCents={categoryPriceCents}
+        cashPriceCents={categoryCashPriceCents}
+        cardPriceCents={categoryCardPriceCents}
         dealNote={categoryDealNote}
       />
       {products.length === 0 ? (
@@ -53,7 +57,8 @@ export default function CategorySection({
             stockCount={product.stockCount}
             soldCount={soldByProductId.get(product.id) ?? null}
             hasActiveShift={hasActiveShift}
-            priceCents={product.priceCents}
+            cashPriceCents={product.cashPriceCents}
+            cardPriceCents={product.cardPriceCents}
             dealNote={product.dealNote}
             showPriceEditor={!hasCategoryPrice}
           />

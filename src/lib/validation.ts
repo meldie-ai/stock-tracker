@@ -45,6 +45,7 @@ export const resetPasswordSchema = z.object({
 });
 
 export const priceSchema = z.object({
-  priceCents: z.number().int().min(0).max(1_000_000).nullable().optional(),
+  cashPriceCents: z.number().int().min(0).max(1_000_000).nullable().optional(),
+  cardPriceCents: z.number().int().min(0).max(1_000_000).nullable().optional(),
   dealNote: z.string().trim().max(60).nullable().optional(),
 });

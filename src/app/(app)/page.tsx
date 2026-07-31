@@ -21,25 +21,9 @@ export default async function DashboardPage() {
     ? `${formatDateDDMMYY(activeShift.startedAt)} ${formatTime12(activeShift.startedAt)}`
     : null;
 
-  let revenueCents: number | null = null;
-  if (activeShift) {
-    revenueCents = 0;
-    for (const category of categories) {
-      for (const product of category.products) {
-        const sold = soldByProductId.get(product.id) ?? 0;
-        const price = category.priceCents ?? product.priceCents ?? 0;
-        revenueCents += sold * price;
-      }
-    }
-  }
-
   return (
     <div>
-      <ShiftControls
-        hasActiveShift={!!activeShift}
-        startedAtLabel={startedAtLabel}
-        revenueCents={revenueCents}
-      />
+      <ShiftControls hasActiveShift={!!activeShift} startedAtLabel={startedAtLabel} />
       <CategoryTabs categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
 
       {categories.length === 0 ? (
@@ -52,7 +36,8 @@ export default async function DashboardPage() {
             key={category.id}
             categoryId={category.id}
             categoryName={category.name}
-            categoryPriceCents={category.priceCents}
+            categoryCashPriceCents={category.cashPriceCents}
+            categoryCardPriceCents={category.cardPriceCents}
             categoryDealNote={category.dealNote}
             products={category.products}
             soldByProductId={soldByProductId}

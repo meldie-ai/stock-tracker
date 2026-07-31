@@ -4,12 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
 import { notifyStockUpdated } from "@/lib/updateSignal";
+import { formatPrice, centsToInputValue, parsePriceInput } from "@/lib/price";
 
 const LOW_STOCK_THRESHOLD = 3; // easy to adjust; low-stock = 0 < stockCount <= this
-
-function formatPrice(priceCents: number): string {
-  return `$${(priceCents / 100).toFixed(2)}`;
-}
 
 export default function ProductRow({
   productId,
@@ -17,7 +14,8 @@ export default function ProductRow({
   stockCount,
   soldCount,
   hasActiveShift,
-  priceCents,
+  cashPriceCents,
+  cardPriceCents,
   dealNote,
   showPriceEditor = true,
 }: {
@@ -26,7 +24,8 @@ export default function ProductRow({
   stockCount: number;
   soldCount: number | null;
   hasActiveShift: boolean;
-  priceCents: number | null;
+  cashPriceCents: number | null;
+  cardPriceCents: number | null;
   dealNote: string | null;
   showPriceEditor?: boolean;
 }) {
@@ -36,9 +35,8 @@ export default function ProductRow({
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustValue, setAdjustValue] = useState(String(stockCount));
   const [priceOpen, setPriceOpen] = useState(false);
-  const [priceValue, setPriceValue] = useState(
-    priceCents !== null ? (priceCents / 100).toFixed(2) : ""
-  );
+  const [cashPriceValue, setCashPriceValue] = useState(centsToInputValue(cashPriceCents));
+  const [cardPriceValue, setCardPriceValue] = useState(centsToInputValue(cardPriceCents));
   const [dealNoteValue, setDealNoteValue] = useState(dealNote ?? "");
   const [error, setError] = useState<string | null>(null);
 
@@ -112,15 +110,11 @@ export default function ProductRow({
   }
 
   function handlePriceSave() {
-    const trimmed = priceValue.trim();
-    let nextPriceCents: number | null = null;
-    if (trimmed !== "") {
-      const dollars = Number(trimmed);
-      if (!Number.isFinite(dollars) || dollars < 0) {
-        setError("Enter a price of 0 or more");
-        return;
-      }
-      nextPriceCents = Math.round(dollars * 100);
+    const cash = parsePriceInput(cashPriceValue);
+    const card = parsePriceInput(cardPriceValue);
+    if (cash === "invalid" || card === "invalid") {
+      setError("Enter a price of 0 or more");
+      return;
     }
     setError(null);
     startTransition(async () => {
@@ -128,7 +122,11 @@ export default function ProductRow({
         const res = await fetchWithTimeout(`/api/products/${productId}/price`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ priceCents: nextPriceCents, dealNote: dealNoteValue.trim() }),
+          body: JSON.stringify({
+            cashPriceCents: cash,
+            cardPriceCents: card,
+            dealNote: dealNoteValue.trim(),
+          }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -158,7 +156,12 @@ export default function ProductRow({
                 · Sold this shift: <span className="font-semibold">{soldCount ?? 0}</span>
               </>
             )}
-            {showPriceEditor && priceCents !== null && <> · {formatPrice(priceCents)}</>}
+            {showPriceEditor && cashPriceCents !== null && (
+              <> · Cash {formatPrice(cashPriceCents)}</>
+            )}
+            {showPriceEditor && cardPriceCents !== null && (
+              <> · Card {formatPrice(cardPriceCents)}</>
+            )}
             {showPriceEditor && dealNote && <> · {dealNote}</>}
           </p>
         </div>
@@ -231,7 +234,8 @@ export default function ProductRow({
           {!priceOpen ? (
             <button
               onClick={() => {
-                setPriceValue(priceCents !== null ? (priceCents / 100).toFixed(2) : "");
+                setCashPriceValue(centsToInputValue(cashPriceCents));
+                setCardPriceValue(centsToInputValue(cardPriceCents));
                 setDealNoteValue(dealNote ?? "");
                 setPriceOpen(true);
               }}
@@ -241,14 +245,24 @@ export default function ProductRow({
             </button>
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
-              <span className="text-xs text-zinc-500">$</span>
+              <span className="text-xs text-zinc-500">Cash $</span>
               <input
                 type="number"
                 min={0}
                 step="0.01"
-                placeholder="Price"
-                value={priceValue}
-                onChange={(e) => setPriceValue(e.target.value)}
+                placeholder="Cash"
+                value={cashPriceValue}
+                onChange={(e) => setCashPriceValue(e.target.value)}
+                className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
+              />
+              <span className="text-xs text-zinc-500">Card $</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="Card"
+                value={cardPriceValue}
+                onChange={(e) => setCardPriceValue(e.target.value)}
                 className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
               />
               <input

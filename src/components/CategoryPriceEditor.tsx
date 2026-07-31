@@ -3,39 +3,35 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
-
-function formatPrice(priceCents: number): string {
-  return `$${(priceCents / 100).toFixed(2)}`;
-}
+import { formatPrice, centsToInputValue, parsePriceInput } from "@/lib/price";
 
 export default function CategoryPriceEditor({
   categoryId,
-  priceCents,
+  cashPriceCents,
+  cardPriceCents,
   dealNote,
 }: {
   categoryId: string;
-  priceCents: number | null;
+  cashPriceCents: number | null;
+  cardPriceCents: number | null;
   dealNote: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
-  const [priceValue, setPriceValue] = useState(
-    priceCents !== null ? (priceCents / 100).toFixed(2) : ""
-  );
+  const [cashPriceValue, setCashPriceValue] = useState(centsToInputValue(cashPriceCents));
+  const [cardPriceValue, setCardPriceValue] = useState(centsToInputValue(cardPriceCents));
   const [dealNoteValue, setDealNoteValue] = useState(dealNote ?? "");
   const [error, setError] = useState<string | null>(null);
 
+  const hasPrice = cashPriceCents !== null || cardPriceCents !== null;
+
   function handleSave() {
-    const trimmed = priceValue.trim();
-    let nextPriceCents: number | null = null;
-    if (trimmed !== "") {
-      const dollars = Number(trimmed);
-      if (!Number.isFinite(dollars) || dollars < 0) {
-        setError("Enter a price of 0 or more");
-        return;
-      }
-      nextPriceCents = Math.round(dollars * 100);
+    const cash = parsePriceInput(cashPriceValue);
+    const card = parsePriceInput(cardPriceValue);
+    if (cash === "invalid" || card === "invalid") {
+      setError("Enter a price of 0 or more");
+      return;
     }
     setError(null);
     startTransition(async () => {
@@ -43,7 +39,11 @@ export default function CategoryPriceEditor({
         const res = await fetchWithTimeout(`/api/categories/${categoryId}/price`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ priceCents: nextPriceCents, dealNote: dealNoteValue.trim() }),
+          body: JSON.stringify({
+            cashPriceCents: cash,
+            cardPriceCents: card,
+            dealNote: dealNoteValue.trim(),
+          }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -60,32 +60,46 @@ export default function CategoryPriceEditor({
 
   return (
     <div className="mb-2">
-      {priceCents !== null && (
+      {hasPrice && (
         <p className="text-xs text-zinc-500 mb-1">
-          {formatPrice(priceCents)} each{dealNote && <> · {dealNote}</>}
+          {cashPriceCents !== null && <>Cash {formatPrice(cashPriceCents)} each</>}
+          {cashPriceCents !== null && cardPriceCents !== null && " · "}
+          {cardPriceCents !== null && <>Card {formatPrice(cardPriceCents)} each</>}
+          {dealNote && <> · {dealNote}</>}
         </p>
       )}
       {!open ? (
         <button
           onClick={() => {
-            setPriceValue(priceCents !== null ? (priceCents / 100).toFixed(2) : "");
+            setCashPriceValue(centsToInputValue(cashPriceCents));
+            setCardPriceValue(centsToInputValue(cardPriceCents));
             setDealNoteValue(dealNote ?? "");
             setOpen(true);
           }}
           className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
         >
-          {priceCents !== null ? "Edit category price & deal" : "Set one price for this whole category"}
+          {hasPrice ? "Edit category price & deal" : "Set one price for this whole category"}
         </button>
       ) : (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-zinc-500">$</span>
+          <span className="text-xs text-zinc-500">Cash $</span>
           <input
             type="number"
             min={0}
             step="0.01"
-            placeholder="Price"
-            value={priceValue}
-            onChange={(e) => setPriceValue(e.target.value)}
+            placeholder="Cash"
+            value={cashPriceValue}
+            onChange={(e) => setCashPriceValue(e.target.value)}
+            className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
+          />
+          <span className="text-xs text-zinc-500">Card $</span>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder="Card"
+            value={cardPriceValue}
+            onChange={(e) => setCardPriceValue(e.target.value)}
             className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
           />
           <input

@@ -17,7 +17,7 @@ export async function POST(
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid price or deal note" }, { status: 400 });
   }
-  const { priceCents, dealNote } = parsed.data;
+  const { cashPriceCents, cardPriceCents, dealNote } = parsed.data;
 
   const result = await prisma.$transaction(async (tx) => {
     const product = await tx.product.findUnique({
@@ -29,12 +29,17 @@ export async function POST(
     const updated = await tx.product.update({
       where: { id: productId },
       data: {
-        ...(priceCents !== undefined && { priceCents }),
+        ...(cashPriceCents !== undefined && { cashPriceCents }),
+        ...(cardPriceCents !== undefined && { cardPriceCents }),
         ...(dealNote !== undefined && { dealNote: dealNote || null }),
       },
     });
 
-    if (priceCents !== undefined && priceCents !== product.priceCents) {
+    const priceChanged =
+      (cashPriceCents !== undefined && cashPriceCents !== product.cashPriceCents) ||
+      (cardPriceCents !== undefined && cardPriceCents !== product.cardPriceCents);
+
+    if (priceChanged) {
       await recordAuditEntry(tx, {
         action: "PRICE_CHANGE",
         userId: auth.user.userId,
@@ -45,7 +50,7 @@ export async function POST(
         quantityDelta: 0,
         stockBefore: product.stockCount,
         stockAfter: product.stockCount,
-        note: `price ${product.priceCents ?? "unset"} -> ${priceCents ?? "unset"} (cents)`,
+        note: `cash ${product.cashPriceCents ?? "unset"} -> ${cashPriceCents ?? "unset"}, card ${product.cardPriceCents ?? "unset"} -> ${cardPriceCents ?? "unset"} (cents)`,
       });
     }
 
@@ -56,5 +61,9 @@ export async function POST(
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ priceCents: result.priceCents, dealNote: result.dealNote });
+  return NextResponse.json({
+    cashPriceCents: result.cashPriceCents,
+    cardPriceCents: result.cardPriceCents,
+    dealNote: result.dealNote,
+  });
 }

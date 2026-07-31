@@ -50,34 +50,38 @@ model LoginAttempt {
 }
 
 model Category {
-  id         String    @id @default(cuid())
-  name       String
-  sortOrder  Int       @default(0)
-  createdAt  DateTime  @default(now())
-  // When set, every product in this category shares this one price/deal
-  // instead of having its own — for categories where every item costs the
-  // same (e.g. all vape flavours), rather than setting the same price on
-  // each product individually. Null means products keep individual prices.
-  priceCents Int?
-  dealNote   String?
-  products   Product[]
+  id             String    @id @default(cuid())
+  name           String
+  sortOrder      Int       @default(0)
+  createdAt      DateTime  @default(now())
+  // When set, every product in this category shares these one cash/card
+  // prices instead of having its own — for categories where every item
+  // costs the same (e.g. all vape flavours), rather than setting the same
+  // price on each product individually. Null means products keep
+  // individual prices.
+  cashPriceCents Int?
+  cardPriceCents Int?
+  dealNote       String?
+  products       Product[]
 }
 
 model Product {
-  id         String   @id @default(cuid())
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  name       String
-  stockCount Int      @default(0)
-  // Selling price in cents (not a float) to avoid currency rounding bugs.
-  // Nullable: existing/new products start with no price set.
-  priceCents Int?
+  id             String   @id @default(cuid())
+  categoryId     String
+  category       Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name           String
+  stockCount     Int      @default(0)
+  // Selling prices in cents (not a float) to avoid currency rounding bugs.
+  // Nullable: existing/new products start with no price set. Two separate
+  // prices since card payments typically cost more than cash here.
+  cashPriceCents Int?
+  cardPriceCents Int?
   // Plain text bundle note (e.g. "3 for $50") — not a calculated price
-  // override, so it does not affect the automatic revenue total.
-  dealNote   String?
-  sortOrder  Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  // override.
+  dealNote       String?
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   shiftSales          ShiftSale[]
   shiftStockSnapshots ShiftStockSnapshot[]
