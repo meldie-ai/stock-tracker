@@ -44,13 +44,13 @@ export default async function ShiftDetailPage({
         Products Sold
       </h2>
       <div className="mb-6">
-        <ShiftBreakdown categories={soldCategories} />
+        <ShiftBreakdown kind="SOLD" categories={soldCategories} />
       </div>
 
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">
         Stock Count
       </h2>
-      <ShiftBreakdown categories={stockCategories} />
+      <ShiftBreakdown kind="STOCK" categories={stockCategories} />
     </div>
   );
 }

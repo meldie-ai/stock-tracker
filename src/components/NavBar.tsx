@@ -100,18 +100,26 @@ export default function NavBar({
             onClick={() => setOpen(false)}
           />
           <div
-            onMouseLeave={() => setOpen(false)}
+            onMouseLeave={() => {
+              // Touch devices synthesize mouseleave/mouseout right when a tap
+              // lands, which would close the menu out from under the finger
+              // before the tap's own click/navigation registers. Only real
+              // hover-capable pointers (a mouse) should close on hover-away.
+              if (typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches) {
+                setOpen(false);
+              }
+            }}
             className="absolute left-4 top-full z-50 mt-1 w-64 rounded-xl border border-black/10 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950 backdrop-blur-xl backdrop-saturate-150 p-3 shadow-lg"
           >
-            <nav className="flex flex-col mb-3">
+            <nav className="flex flex-col gap-0.5 mb-3">
               {links.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   className={
                     pathname === link.href
-                      ? "rounded-md px-2 py-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
-                      : "rounded-md px-2 py-1.5 text-sm text-zinc-500 hover:bg-black/5 dark:hover:bg-zinc-900"
+                      ? "rounded-md px-3 py-3 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
+                      : "rounded-md px-3 py-3 text-sm text-zinc-500 active:bg-black/10 hover:bg-black/5 dark:hover:bg-zinc-900"
                   }
                 >
                   {link.label}
@@ -124,8 +132,8 @@ export default function NavBar({
                     href={link.href}
                     className={
                       pathname === link.href
-                        ? "rounded-md px-2 py-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
-                        : "rounded-md px-2 py-1.5 text-sm text-zinc-500 hover:bg-black/5 dark:hover:bg-zinc-900"
+                        ? "rounded-md px-3 py-3 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
+                        : "rounded-md px-3 py-3 text-sm text-zinc-500 active:bg-black/10 hover:bg-black/5 dark:hover:bg-zinc-900"
                     }
                   >
                     {link.label}

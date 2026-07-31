@@ -27,6 +27,7 @@ export default async function ProductsSoldPage() {
             </span>
           </p>
           <ShiftBreakdown
+            kind="SOLD"
             categories={categoriesForActiveShift(
               categoriesWithProducts,
               new Map(activeShift.sales.map((s) => [s.productId, s.soldCount])),

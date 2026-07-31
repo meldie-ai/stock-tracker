@@ -1,6 +1,23 @@
 import type { ShiftTextCategory } from "@/lib/textTemplates";
 
-export default function ShiftBreakdown({ categories }: { categories: ShiftTextCategory[] }) {
+const LOW_STOCK_THRESHOLD = 3; // matches ProductRow's low-stock cutoff
+
+function valueColorClass(value: number, kind: "SOLD" | "STOCK") {
+  if (kind === "STOCK") {
+    if (value === 0) return "text-red-700 dark:text-red-400";
+    if (value <= LOW_STOCK_THRESHOLD) return "text-amber-700 dark:text-amber-400";
+    return "text-green-700 dark:text-green-400";
+  }
+  return value === 0 ? "text-zinc-400 dark:text-zinc-600" : "text-blue-700 dark:text-blue-400";
+}
+
+export default function ShiftBreakdown({
+  categories,
+  kind,
+}: {
+  categories: ShiftTextCategory[];
+  kind: "SOLD" | "STOCK";
+}) {
   if (categories.length === 0) {
     return <p className="text-sm text-zinc-500">No categories yet.</p>;
   }
@@ -27,7 +44,9 @@ export default function ShiftBreakdown({ categories }: { categories: ShiftTextCa
                     className="flex items-center justify-between gap-3 text-sm text-zinc-700 dark:text-zinc-300"
                   >
                     <span>{product.name}</span>
-                    <span className="font-medium tabular-nums">{product.value}</span>
+                    <span className={`font-semibold tabular-nums ${valueColorClass(product.value, kind)}`}>
+                      {product.value}
+                    </span>
                   </li>
                 ))}
               </ul>
