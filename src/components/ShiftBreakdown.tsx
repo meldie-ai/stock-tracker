@@ -41,12 +41,10 @@ export default function ShiftBreakdown({
                 {category.products.map((product) => (
                   <li
                     key={product.name}
-                    className="flex items-center justify-between gap-3 text-sm text-zinc-700 dark:text-zinc-300"
+                    className={`flex items-center justify-between gap-3 text-sm ${valueColorClass(product.value, kind)}`}
                   >
                     <span>{product.name}</span>
-                    <span className={`font-semibold tabular-nums ${valueColorClass(product.value, kind)}`}>
-                      {product.value}
-                    </span>
+                    <span className="font-semibold tabular-nums">{product.value}</span>
                   </li>
                 ))}
               </ul>
