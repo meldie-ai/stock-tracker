@@ -24,6 +24,9 @@ export async function POST(
     where: { status: "ACTIVE" },
     select: { id: true },
   });
+  if (!activeShift) {
+    return NextResponse.json({ error: "Start a shift to do this" }, { status: 409 });
+  }
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -51,7 +54,7 @@ export async function POST(
         quantityDelta: updated.stockCount - product.stockCount,
         stockBefore: product.stockCount,
         stockAfter: updated.stockCount,
-        shiftId: activeShift?.id ?? null,
+        shiftId: activeShift.id,
         note: `mode=${mode} value=${value}`,
       });
 
@@ -62,7 +65,7 @@ export async function POST(
         newStockCount: updated.stockCount,
         userId: auth.user.userId,
         usernameSnapshot: auth.user.username,
-        shiftId: activeShift?.id ?? null,
+        shiftId: activeShift.id,
       });
       if (cascade.cascaded) {
         const refilled = await tx.product.update({
@@ -81,7 +84,7 @@ export async function POST(
           quantityDelta: refilled.stockCount,
           stockBefore: 0,
           stockAfter: refilled.stockCount,
-          shiftId: activeShift?.id ?? null,
+          shiftId: activeShift.id,
           note: "Auto-refilled from linked carton product",
         });
       }

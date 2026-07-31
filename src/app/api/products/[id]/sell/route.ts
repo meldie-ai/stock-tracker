@@ -24,10 +24,7 @@ export async function POST(
     where: { status: "ACTIVE" },
   });
   if (!activeShift) {
-    return NextResponse.json(
-      { error: "No active shift. Start a shift before recording sales." },
-      { status: 409 }
-    );
+    return NextResponse.json({ error: "Start a shift to do this" }, { status: 409 });
   }
 
   try {
