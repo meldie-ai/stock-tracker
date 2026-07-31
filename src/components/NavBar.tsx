@@ -57,11 +57,21 @@ export default function NavBar({
 
   // Scrolling the page is a stronger dismiss signal than requiring a tap on
   // touch devices, which have no hover to close the menu with otherwise.
+  // Arm the listener on a short delay rather than the instant the menu
+  // opens: mobile browsers often fire a scroll event around a tap itself
+  // (address bar collapsing, viewport settling), which would otherwise
+  // close the menu back out immediately and make the burger button feel
+  // like it isn't responding at all.
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
-    window.addEventListener("scroll", close, { passive: true });
-    return () => window.removeEventListener("scroll", close);
+    const armTimer = setTimeout(() => {
+      window.addEventListener("scroll", close, { passive: true });
+    }, 300);
+    return () => {
+      clearTimeout(armTimer);
+      window.removeEventListener("scroll", close);
+    };
   }, [open]);
 
   async function handleLogout() {
@@ -79,7 +89,7 @@ export default function NavBar({
               onClick={() => setOpen((o) => !o)}
               aria-label="Menu"
               aria-expanded={open}
-              className="flex h-9 w-9 items-center justify-center rounded-md text-zinc-600 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-zinc-900"
+              className="-ml-1 flex h-11 w-11 touch-manipulation items-center justify-center rounded-md text-zinc-600 dark:text-zinc-300 active:bg-black/10 hover:bg-black/5 dark:active:bg-zinc-800 dark:hover:bg-zinc-900"
             >
               <span className="text-xl leading-none">☰</span>
             </button>
