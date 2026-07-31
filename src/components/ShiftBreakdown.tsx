@@ -4,7 +4,7 @@ const LOW_STOCK_THRESHOLD = 3; // matches ProductRow's low-stock cutoff
 
 function valueColorClass(value: number, kind: "SOLD" | "STOCK") {
   if (kind === "STOCK") {
-    if (value === 0) return "text-red-600 dark:text-red-400";
+    if (value === 0) return "text-zinc-500 dark:text-zinc-500";
     if (value <= LOW_STOCK_THRESHOLD) return "text-amber-500 dark:text-amber-300";
     return "text-green-700 dark:text-green-400";
   }
