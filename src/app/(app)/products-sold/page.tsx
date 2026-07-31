@@ -1,5 +1,5 @@
 import { categoriesForActiveShift, getActiveShift, getCategoriesWithProducts } from "@/lib/data";
-import { formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
+import { dayPartLabel, formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
 import { buildCategoriesCopyText } from "@/lib/shiftCopyText";
 import ShiftBreakdown from "@/components/ShiftBreakdown";
 import CopyButton from "@/components/CopyButton";
@@ -35,14 +35,14 @@ export default async function ProductsSoldPage() {
                   <span className="font-medium">
                     {formatDateDDMMYY(activeShift.startedAt)} {formatTime12(activeShift.startedAt)}
                   </span>{" "}
-                  &middot; Started by{" "}
+                  ({dayPartLabel(activeShift.startedAt)}) &middot; Started by{" "}
                   <span className="font-medium">{activeShift.startedByUser.username}</span>
                 </p>
                 <CopyButton
                   text={buildCategoriesCopyText(
                     [
                       "Products Sold",
-                      `Shift active since ${formatDateDDMMYY(activeShift.startedAt)} ${formatTime12(activeShift.startedAt)}`,
+                      `Shift active since ${formatDateDDMMYY(activeShift.startedAt)} ${formatTime12(activeShift.startedAt)} (${dayPartLabel(activeShift.startedAt)})`,
                       `Started by ${activeShift.startedByUser.username}`,
                     ],
                     categories

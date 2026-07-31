@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getShiftDetail, groupByCategory } from "@/lib/data";
-import { formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
+import { dayPartLabel, formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
 import { buildShiftReportCopyText } from "@/lib/shiftCopyText";
 import ShiftBreakdown from "@/components/ShiftBreakdown";
 import CopyButton from "@/components/CopyButton";
@@ -32,6 +32,9 @@ export default async function ShiftDetailPage({
   );
 
   const dateRangeLabel = `${formatDateDDMMYY(shift.startedAt)} ${formatTime12(shift.startedAt)} – ${formatDateDDMMYY(shift.endedAt)} ${formatTime12(shift.endedAt)}`;
+  const startDayPart = dayPartLabel(shift.startedAt);
+  const endDayPart = dayPartLabel(shift.endedAt);
+  const dayPartRangeLabel = startDayPart === endDayPart ? startDayPart : `${startDayPart} – ${endDayPart}`;
 
   return (
     <div>
@@ -41,7 +44,7 @@ export default async function ShiftDetailPage({
           text={buildShiftReportCopyText(
             [
               "Shift Report",
-              dateRangeLabel,
+              `${dateRangeLabel} (${dayPartRangeLabel})`,
               `Started by ${shift.startedByUser.username}`,
               ...(shift.endedByUser ? [`Ended by ${shift.endedByUser.username}`] : []),
             ],
@@ -52,7 +55,9 @@ export default async function ShiftDetailPage({
           )}
         />
       </div>
-      <p className="text-sm text-zinc-500 mb-1">{dateRangeLabel}</p>
+      <p className="text-sm text-zinc-500 mb-1">
+        {dateRangeLabel} ({dayPartRangeLabel})
+      </p>
       <p className="text-sm text-zinc-500 mb-6">
         Started by <span className="font-medium">{shift.startedByUser.username}</span>
         {shift.endedByUser && (

@@ -15,6 +15,7 @@ type ShopLocalParts = {
   day: number;
   hour: number;
   minute: number;
+  weekdayName: string; // e.g. "Sunday"
 };
 
 function getShopLocalParts(date: Date): ShopLocalParts {
@@ -26,6 +27,7 @@ function getShopLocalParts(date: Date): ShopLocalParts {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    weekday: "long",
   });
 
   const map: Record<string, string> = {};
@@ -39,7 +41,21 @@ function getShopLocalParts(date: Date): ShopLocalParts {
     day: Number(map.day),
     hour: map.hour === "24" ? 0 : Number(map.hour),
     minute: Number(map.minute),
+    weekdayName: map.weekday,
   };
+}
+
+/** "morning" before noon, "afternoon" 12-5pm, "night" from 5pm onward. */
+function dayPart(hour: number): "morning" | "afternoon" | "night" {
+  if (hour < 12) return "morning";
+  if (hour < 17) return "afternoon";
+  return "night";
+}
+
+/** e.g. "Sunday morning" */
+export function dayPartLabel(date: Date): string {
+  const { weekdayName, hour } = getShopLocalParts(date);
+  return `${weekdayName} ${dayPart(hour)}`;
 }
 
 /** e.g. "24/07/26" — built manually to avoid locale-dependent DD/MM vs MM/DD ambiguity. */
