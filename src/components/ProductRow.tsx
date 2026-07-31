@@ -143,7 +143,7 @@ export default function ProductRow({
 
   return (
     <div className={`rounded-lg px-3 py-3 mb-1.5 last:mb-0 ${rowBgClass}`}>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
             {name}
@@ -176,30 +176,31 @@ export default function ProductRow({
           </p>
         </div>
 
-        {hasActiveShift &&
-          (soldOut ? (
-            <span className="rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 px-2.5 py-1 text-xs font-semibold shrink-0">
-              Sold Out
-            </span>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <input
-                type="number"
-                min={1}
-                value={sellQty}
-                onChange={(e) => setSellQty(e.target.value)}
-                className="w-14 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm text-center"
-              />
-              <button
-                onClick={handleSell}
-                disabled={isPending}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                Sell
-              </button>
-            </div>
-          ))}
+        {hasActiveShift && soldOut && (
+          <span className="rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 px-2.5 py-1 text-xs font-semibold shrink-0">
+            Sold Out
+          </span>
+        )}
       </div>
+
+      {hasActiveShift && !soldOut && (
+        <div className="mt-2 flex items-center justify-end gap-1.5">
+          <input
+            type="number"
+            min={1}
+            value={sellQty}
+            onChange={(e) => setSellQty(e.target.value)}
+            className="w-14 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm text-center"
+          />
+          <button
+            onClick={handleSell}
+            disabled={isPending}
+            className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            Sell
+          </button>
+        </div>
+      )}
 
       <div className="mt-1">
         {!adjustOpen ? (
