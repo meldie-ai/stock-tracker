@@ -27,7 +27,8 @@ export default async function DashboardPage() {
     for (const category of categories) {
       for (const product of category.products) {
         const sold = soldByProductId.get(product.id) ?? 0;
-        revenueCents += sold * (product.priceCents ?? 0);
+        const price = category.priceCents ?? product.priceCents ?? 0;
+        revenueCents += sold * price;
       }
     }
   }
@@ -49,7 +50,10 @@ export default async function DashboardPage() {
         categories.map((category) => (
           <CategorySection
             key={category.id}
+            categoryId={category.id}
             categoryName={category.name}
+            categoryPriceCents={category.priceCents}
+            categoryDealNote={category.dealNote}
             products={category.products}
             soldByProductId={soldByProductId}
             hasActiveShift={!!activeShift}

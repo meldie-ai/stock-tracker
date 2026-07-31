@@ -6,7 +6,7 @@ export async function recordAuditEntry(
     action: AuditAction;
     userId: string;
     usernameSnapshot: string;
-    productId: string;
+    productId: string | null;
     productNameSnapshot: string;
     categoryNameSnapshot: string;
     quantityDelta: number;

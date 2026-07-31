@@ -50,11 +50,17 @@ model LoginAttempt {
 }
 
 model Category {
-  id        String    @id @default(cuid())
-  name      String
-  sortOrder Int       @default(0)
-  createdAt DateTime  @default(now())
-  products  Product[]
+  id         String    @id @default(cuid())
+  name       String
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+  // When set, every product in this category shares this one price/deal
+  // instead of having its own — for categories where every item costs the
+  // same (e.g. all vape flavours), rather than setting the same price on
+  // each product individually. Null means products keep individual prices.
+  priceCents Int?
+  dealNote   String?
+  products   Product[]
 }
 
 model Product {

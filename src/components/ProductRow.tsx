@@ -19,6 +19,7 @@ export default function ProductRow({
   hasActiveShift,
   priceCents,
   dealNote,
+  showPriceEditor = true,
 }: {
   productId: string;
   name: string;
@@ -27,6 +28,7 @@ export default function ProductRow({
   hasActiveShift: boolean;
   priceCents: number | null;
   dealNote: string | null;
+  showPriceEditor?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -156,8 +158,8 @@ export default function ProductRow({
                 · Sold this shift: <span className="font-semibold">{soldCount ?? 0}</span>
               </>
             )}
-            {priceCents !== null && <> · {formatPrice(priceCents)}</>}
-            {dealNote && <> · {dealNote}</>}
+            {showPriceEditor && priceCents !== null && <> · {formatPrice(priceCents)}</>}
+            {showPriceEditor && dealNote && <> · {dealNote}</>}
           </p>
         </div>
 
@@ -224,53 +226,55 @@ export default function ProductRow({
         )}
       </div>
 
-      <div className="mt-1">
-        {!priceOpen ? (
-          <button
-            onClick={() => {
-              setPriceValue(priceCents !== null ? (priceCents / 100).toFixed(2) : "");
-              setDealNoteValue(dealNote ?? "");
-              setPriceOpen(true);
-            }}
-            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-          >
-            Edit price &amp; deal
-          </button>
-        ) : (
-          <div className="flex flex-wrap items-center gap-1.5 mt-1">
-            <span className="text-xs text-zinc-500">$</span>
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              placeholder="Price"
-              value={priceValue}
-              onChange={(e) => setPriceValue(e.target.value)}
-              className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
-            />
-            <input
-              type="text"
-              placeholder="Deal note, e.g. 3 for $50"
-              value={dealNoteValue}
-              onChange={(e) => setDealNoteValue(e.target.value)}
-              className="min-w-[140px] flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
-            />
+      {showPriceEditor && (
+        <div className="mt-1">
+          {!priceOpen ? (
             <button
-              onClick={handlePriceSave}
-              disabled={isPending}
-              className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              onClick={() => {
+                setPriceValue(priceCents !== null ? (priceCents / 100).toFixed(2) : "");
+                setDealNoteValue(dealNote ?? "");
+                setPriceOpen(true);
+              }}
+              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
             >
-              Save
+              Edit price &amp; deal
             </button>
-            <button
-              onClick={() => setPriceOpen(false)}
-              className="text-xs text-zinc-400 hover:text-zinc-600"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              <span className="text-xs text-zinc-500">$</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="Price"
+                value={priceValue}
+                onChange={(e) => setPriceValue(e.target.value)}
+                className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
+              />
+              <input
+                type="text"
+                placeholder="Deal note, e.g. 3 for $50"
+                value={dealNoteValue}
+                onChange={(e) => setDealNoteValue(e.target.value)}
+                className="min-w-[140px] flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
+              />
+              <button
+                onClick={handlePriceSave}
+                disabled={isPending}
+                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setPriceOpen(false)}
+                className="text-xs text-zinc-400 hover:text-zinc-600"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {error && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>

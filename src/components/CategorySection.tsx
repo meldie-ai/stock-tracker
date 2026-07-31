@@ -1,4 +1,5 @@
 import ProductRow from "@/components/ProductRow";
+import CategoryPriceEditor from "@/components/CategoryPriceEditor";
 import { categoryAnchorId } from "@/lib/slug";
 
 type Product = {
@@ -10,16 +11,24 @@ type Product = {
 };
 
 export default function CategorySection({
+  categoryId,
   categoryName,
+  categoryPriceCents,
+  categoryDealNote,
   products,
   soldByProductId,
   hasActiveShift,
 }: {
+  categoryId: string;
   categoryName: string;
+  categoryPriceCents: number | null;
+  categoryDealNote: string | null;
   products: Product[];
   soldByProductId: Map<string, number>;
   hasActiveShift: boolean;
 }) {
+  const hasCategoryPrice = categoryPriceCents !== null;
+
   return (
     <section
       id={categoryAnchorId(categoryName)}
@@ -28,6 +37,11 @@ export default function CategorySection({
       <h2 className="whitespace-pre-line text-sm font-bold uppercase tracking-wide text-zinc-900 dark:text-zinc-50 mb-2">
         {categoryName}
       </h2>
+      <CategoryPriceEditor
+        categoryId={categoryId}
+        priceCents={categoryPriceCents}
+        dealNote={categoryDealNote}
+      />
       {products.length === 0 ? (
         <p className="text-sm text-zinc-400">No products yet.</p>
       ) : (
@@ -41,6 +55,7 @@ export default function CategorySection({
             hasActiveShift={hasActiveShift}
             priceCents={product.priceCents}
             dealNote={product.dealNote}
+            showPriceEditor={!hasCategoryPrice}
           />
         ))
       )}
