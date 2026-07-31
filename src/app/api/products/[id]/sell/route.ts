@@ -60,7 +60,7 @@ export async function POST(
       let finalStockCount = updatedProduct.stockCount;
       const cascade = await tryCascadeSinglesFromCarton(tx, {
         productName: product.name,
-        categoryName: product.category.name,
+        linkedCartonProductId: product.linkedCartonProductId,
         newStockCount: updatedProduct.stockCount,
         userId: auth.user.userId,
         usernameSnapshot: auth.user.username,
@@ -84,7 +84,7 @@ export async function POST(
           stockBefore: 0,
           stockAfter: refilled.stockCount,
           shiftId: activeShift.id,
-          note: "Auto-refilled from matching CARTONS product",
+          note: "Auto-refilled from linked carton product",
         });
       }
 

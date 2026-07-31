@@ -33,6 +33,7 @@ export const updateProductSchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
   categoryId: z.string().min(1).optional(),
   sortOrder: z.number().int().optional(),
+  linkedCartonProductId: z.string().min(1).nullable().optional(),
 });
 
 export const createStaffSchema = z.object({

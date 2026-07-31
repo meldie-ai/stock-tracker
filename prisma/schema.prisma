@@ -83,6 +83,16 @@ model Product {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  // When set, selling/adjusting this product down to exactly 0 decrements
+  // the linked product by 1 and refills this product back up to PACK_SIZE
+  // (e.g. a Singles pack refilling from its Cartons product). An explicit
+  // link chosen in Manage, rather than matching by category/product name —
+  // name-matching proved fragile in practice (silently breaks on any
+  // spelling or whitespace drift between the two lists).
+  linkedCartonProductId String?
+  linkedCartonProduct   Product?  @relation("SinglesCartonLink", fields: [linkedCartonProductId], references: [id], onDelete: SetNull)
+  linkedBySingles       Product[] @relation("SinglesCartonLink")
+
   shiftSales          ShiftSale[]
   shiftStockSnapshots ShiftStockSnapshot[]
   auditLogs           AuditLog[]

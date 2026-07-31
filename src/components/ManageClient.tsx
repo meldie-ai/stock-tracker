@@ -3,7 +3,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-type Product = { id: string; name: string; stockCount: number; categoryId: string };
+type Product = {
+  id: string;
+  name: string;
+  stockCount: number;
+  categoryId: string;
+  linkedCartonProductId: string | null;
+};
 type Category = { id: string; name: string; products: Product[] };
 
 export default function ManageClient({ categories }: { categories: Category[] }) {
@@ -96,6 +102,16 @@ export default function ManageClient({ categories }: { categories: Category[] })
     run(() => fetch(`/api/products/${id}`, { method: "DELETE" }));
   }
 
+  function linkProduct(id: string, linkedCartonProductId: string) {
+    run(() =>
+      fetch(`/api/products/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ linkedCartonProductId: linkedCartonProductId || null }),
+      })
+    );
+  }
+
   return (
     <div>
       <section className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-4">
@@ -175,6 +191,27 @@ export default function ManageClient({ categories }: { categories: Category[] })
                 >
                   Delete
                 </button>
+              </div>
+              <div className="flex items-center gap-2 px-2">
+                <span className="text-xs text-zinc-400">Refills from:</span>
+                <select
+                  defaultValue={product.linkedCartonProductId ?? ""}
+                  onChange={(e) => linkProduct(product.id, e.target.value)}
+                  className="min-w-0 flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-1 py-1 text-xs"
+                >
+                  <option value="">None (no auto-refill)</option>
+                  {categories.map((c) => (
+                    <optgroup key={c.id} label={c.name.split("\n")[0]}>
+                      {c.products
+                        .filter((p) => p.id !== product.id)
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                  ))}
+                </select>
               </div>
             </div>
           ))}
