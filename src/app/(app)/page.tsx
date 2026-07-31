@@ -23,7 +23,11 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <ShiftControls hasActiveShift={!!activeShift} startedAtLabel={startedAtLabel} />
+      <ShiftControls
+        hasActiveShift={!!activeShift}
+        startedAtLabel={startedAtLabel}
+        startedByUsername={activeShift?.startedByUser.username ?? null}
+      />
 
       {categories.length === 0 ? (
         <p className="text-sm text-zinc-500">

@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 export default function ShiftControls({
   hasActiveShift,
   startedAtLabel,
+  startedByUsername,
 }: {
   hasActiveShift: boolean;
   startedAtLabel: string | null;
+  startedByUsername: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -48,6 +50,12 @@ export default function ShiftControls({
         <>
           <p className="text-sm text-zinc-500 mb-3">
             Shift active since <span className="font-medium">{startedAtLabel}</span>
+            {startedByUsername && (
+              <>
+                {" "}
+                &middot; Started by <span className="font-medium">{startedByUsername}</span>
+              </>
+            )}
           </p>
           {!confirmingEnd ? (
             <button

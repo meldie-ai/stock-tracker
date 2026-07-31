@@ -24,7 +24,8 @@ export default async function StockCountPage() {
             Shift active since{" "}
             <span className="font-medium">
               {formatDateDDMMYY(activeShift.startedAt)} {formatTime12(activeShift.startedAt)}
-            </span>
+            </span>{" "}
+            &middot; Started by <span className="font-medium">{activeShift.startedByUser.username}</span>
           </p>
           <ShiftBreakdown
             kind="STOCK"

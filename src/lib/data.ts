@@ -18,7 +18,7 @@ export async function getLastStockUpdateTime(): Promise<Date | null> {
 export async function getActiveShift() {
   return prisma.shift.findFirst({
     where: { status: "ACTIVE" },
-    include: { sales: true },
+    include: { sales: true, startedByUser: { select: { username: true } } },
   });
 }
 
