@@ -14,7 +14,7 @@ export default async function AppLayout({
   const lastStockUpdate = await getLastStockUpdateTime();
 
   return (
-    <div className="flex flex-1 flex-col bg-zinc-50 dark:bg-black">
+    <div className="flex flex-1 flex-col bg-slate-100 dark:bg-black">
       <NavBar
         username={user.username}
         role={user.role}

@@ -62,14 +62,14 @@ export default function NavBar({
   }
 
   return (
-    <header className="sticky top-0 z-40 h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur">
+    <header className="sticky top-0 z-40 h-14 border-b border-black/10 dark:border-zinc-800 bg-white/55 dark:bg-zinc-950/95 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-full max-w-3xl items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setOpen((o) => !o)}
             aria-label="Menu"
             aria-expanded={open}
-            className="flex h-9 w-9 items-center justify-center rounded-md text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            className="flex h-9 w-9 items-center justify-center rounded-md text-zinc-600 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-zinc-900"
           >
             <span className="text-xl leading-none">☰</span>
           </button>
@@ -88,7 +88,7 @@ export default function NavBar({
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute left-4 top-full z-50 mt-1 w-64 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 shadow-lg">
+          <div className="absolute left-4 top-full z-50 mt-1 w-64 rounded-xl border border-black/10 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950 backdrop-blur-xl backdrop-saturate-150 p-3 shadow-lg">
             <nav className="flex flex-col mb-3">
               {links.map((link) => (
                 <Link
@@ -97,7 +97,7 @@ export default function NavBar({
                   className={
                     pathname === link.href
                       ? "rounded-md px-2 py-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
-                      : "rounded-md px-2 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                      : "rounded-md px-2 py-1.5 text-sm text-zinc-500 hover:bg-black/5 dark:hover:bg-zinc-900"
                   }
                 >
                   {link.label}
@@ -111,7 +111,7 @@ export default function NavBar({
                     className={
                       pathname === link.href
                         ? "rounded-md px-2 py-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-50"
-                        : "rounded-md px-2 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                        : "rounded-md px-2 py-1.5 text-sm text-zinc-500 hover:bg-black/5 dark:hover:bg-zinc-900"
                     }
                   >
                     {link.label}
@@ -119,7 +119,7 @@ export default function NavBar({
                 ))}
             </nav>
 
-            <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-900 pt-3">
+            <div className="flex items-center justify-between border-t border-black/10 dark:border-zinc-900 pt-3">
               <span className="text-sm text-zinc-500">{username}</span>
               <button
                 onClick={handleLogout}

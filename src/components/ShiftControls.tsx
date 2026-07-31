@@ -43,7 +43,7 @@ export default function ShiftControls({
   }
 
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-6">
+    <div className="rounded-xl border border-black/10 dark:border-zinc-800 bg-white/55 dark:bg-zinc-950 backdrop-blur-xl backdrop-saturate-150 p-4 mb-6">
       {hasActiveShift ? (
         <>
           <p className="text-sm text-zinc-500 mb-3">
@@ -52,7 +52,7 @@ export default function ShiftControls({
           {!confirmingEnd ? (
             <button
               onClick={() => setConfirmingEnd(true)}
-              className="text-sm text-red-600 hover:underline"
+              className="rounded-full border border-red-200 dark:border-red-900 bg-red-50/70 dark:bg-red-950/40 px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100/70 dark:hover:bg-red-950/60"
             >
               End shift
             </button>
