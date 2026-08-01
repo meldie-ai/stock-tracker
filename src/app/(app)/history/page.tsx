@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getClosedShiftsWithinDays } from "@/lib/data";
 import { formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
 
-const HISTORY_RETENTION_DAYS = 14; // matches the cron cleanup's shift retention
+const HISTORY_RETENTION_DAYS = 30; // matches the cron cleanup's shift retention
 
 export default async function HistoryPage() {
   const shifts = await getClosedShiftsWithinDays(HISTORY_RETENTION_DAYS);

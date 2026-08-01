@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Weekly report needs the last *completed* Monday-Sunday week intact no matter which day
-// of the following week someone checks it — a plain rolling 7 days would start deleting
-// the oldest day of that week mid-week. 14 days keeps it available with plenty of margin,
-// matching the audit log's existing retention.
-const RETENTION_DAYS = 14;
-const AUDIT_LOG_RETENTION_DAYS = 14;
+// Product/Category (the live stock catalog) are never touched here — only Shift and
+// AuditLog rows expire. History, the audit log, and the weekly report are kept for a
+// month; anything older is removed automatically so storage doesn't grow unbounded.
+const RETENTION_DAYS = 30;
+const AUDIT_LOG_RETENTION_DAYS = 30;
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");

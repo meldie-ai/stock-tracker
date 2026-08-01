@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
 import { getClosedShiftsWithinDays } from "@/lib/data";
 
-const HISTORY_RETENTION_DAYS = 14; // matches the cron cleanup's shift retention
+const HISTORY_RETENTION_DAYS = 30; // matches the cron cleanup's shift retention
 
 export async function GET(request: NextRequest) {
   const auth = await requireAuthenticatedRequest(request);

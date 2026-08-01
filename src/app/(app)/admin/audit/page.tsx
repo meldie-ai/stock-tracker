@@ -8,7 +8,7 @@ export default async function AdminAuditPage() {
     <div>
       <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Audit log</h1>
       <p className="text-sm text-zinc-500 mb-4">
-        Last 14 days of stock changes. Older entries are automatically removed.
+        Last 30 days of stock changes. Older entries are automatically removed.
       </p>
 
       {entries.length === 0 ? (

@@ -130,7 +130,7 @@ model AuditLog {
 
   // Informational only, no FK: Shift and AuditLog rows are purged by
   // separate, non-transactional cron deletes, so a real relation could
-  // still go stale between the two even though both currently keep 14 days.
+  // still go stale between the two even though both currently keep 30 days.
   shiftId String?
   note    String?
 
