@@ -1,4 +1,9 @@
-import { categoriesForActiveShift, getActiveShift, getCategoriesWithProducts } from "@/lib/data";
+import {
+  categoriesForActiveShift,
+  getActiveShift,
+  getCategoriesWithProducts,
+  sumSoldByProductId,
+} from "@/lib/data";
 import { dayPartLabel, formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
 import { buildCategoriesCopyText } from "@/lib/shiftCopyText";
 import ShiftBreakdown from "@/components/ShiftBreakdown";
@@ -24,7 +29,7 @@ export default async function StockCountPage() {
         (() => {
           const categories = categoriesForActiveShift(
             categoriesWithProducts,
-            new Map(activeShift.sales.map((s) => [s.productId, s.soldCount])),
+            sumSoldByProductId(activeShift.sales),
             "STOCK"
           );
           return (

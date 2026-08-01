@@ -53,7 +53,7 @@ export default function ProductRow({
       ? "text-amber-800 dark:text-amber-300"
       : "text-green-800 dark:text-green-300";
 
-  function handleSell() {
+  function handleSell(paymentMethod: "CASH" | "CARD") {
     const quantity = Number(sellQty);
     if (!Number.isInteger(quantity) || quantity <= 0) {
       setError("Enter a positive whole number");
@@ -65,7 +65,7 @@ export default function ProductRow({
         const res = await fetchWithTimeout(`/api/products/${productId}/sell`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ quantity }),
+          body: JSON.stringify({ quantity, paymentMethod }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -184,7 +184,7 @@ export default function ProductRow({
       </div>
 
       {hasActiveShift && !soldOut && (
-        <div className="mt-2 flex items-center justify-end gap-1.5">
+        <div className="mt-2 flex flex-wrap items-center justify-end gap-1.5">
           <input
             type="number"
             min={1}
@@ -193,11 +193,18 @@ export default function ProductRow({
             className="w-14 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm text-center"
           />
           <button
-            onClick={handleSell}
+            onClick={() => handleSell("CASH")}
             disabled={isPending}
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            Sell
+            Cash
+          </button>
+          <button
+            onClick={() => handleSell("CARD")}
+            disabled={isPending}
+            className="rounded-md bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            Card
           </button>
         </div>
       )}

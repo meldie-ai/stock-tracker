@@ -110,6 +110,11 @@ enum AuditAction {
   PRICE_CHANGE
 }
 
+enum PaymentMethod {
+  CASH
+  CARD
+}
+
 model AuditLog {
   id        String      @id @default(cuid())
   createdAt DateTime    @default(now())
@@ -171,8 +176,11 @@ model ShiftSale {
   categorySortOrder    Int      @default(0)
   sortOrder            Int      @default(0)
   soldCount            Int      @default(0)
+  // Null on rows from before payment-method tracking was added; every sale going forward
+  // sets one. A product can now have up to two rows per shift, one per method.
+  paymentMethod        PaymentMethod?
 
-  @@unique([shiftId, productId])
+  @@unique([shiftId, productId, paymentMethod])
   @@index([shiftId])
 }
 

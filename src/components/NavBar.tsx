@@ -18,7 +18,7 @@ const links = [
 const adminLinks = [
   { href: "/admin/staff", label: "Staff" },
   { href: "/admin/audit", label: "Audit Log" },
-  { href: "/admin/reports", label: "Weekly Report" },
+  { href: "/admin/reports", label: "Sales Report" },
 ];
 
 export default function NavBar({

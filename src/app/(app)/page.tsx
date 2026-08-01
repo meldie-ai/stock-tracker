@@ -1,4 +1,4 @@
-import { getActiveShift, getCategoriesWithProducts } from "@/lib/data";
+import { getActiveShift, getCategoriesWithProducts, sumSoldByProductId } from "@/lib/data";
 import { formatTime12, formatDateDDMMYY } from "@/lib/dateFormat";
 import ShiftControls from "@/components/ShiftControls";
 import CategorySection from "@/components/CategorySection";
@@ -10,12 +10,7 @@ export default async function DashboardPage() {
     getActiveShift(),
   ]);
 
-  const soldByProductId = new Map<string, number>();
-  if (activeShift) {
-    for (const sale of activeShift.sales) {
-      if (sale.productId) soldByProductId.set(sale.productId, sale.soldCount);
-    }
-  }
+  const soldByProductId = activeShift ? sumSoldByProductId(activeShift.sales) : new Map<string, number>();
 
   const startedAtLabel = activeShift
     ? `${formatDateDDMMYY(activeShift.startedAt)} ${formatTime12(activeShift.startedAt)}`

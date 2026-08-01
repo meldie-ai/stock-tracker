@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getShiftDetail, groupByCategory } from "@/lib/data";
+import { getShiftDetail, groupByCategory, sumDuplicateProductRows } from "@/lib/data";
 import { dayPartLabel, formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
 import { buildShiftReportCopyText } from "@/lib/shiftCopyText";
 import ShiftBreakdown from "@/components/ShiftBreakdown";
@@ -17,11 +17,15 @@ export default async function ShiftDetailPage({
   }
 
   const soldCategories = groupByCategory(
-    shift.sales.map((s) => ({
-      categoryNameSnapshot: s.categoryNameSnapshot,
-      productNameSnapshot: s.productNameSnapshot,
-      value: s.soldCount,
-    }))
+    // A product can have separate cash/card rows for the same shift now — sum them back
+    // into one line per product (but keep zero-sold products, unlike the summary reports).
+    sumDuplicateProductRows(
+      shift.sales.map((s) => ({
+        categoryNameSnapshot: s.categoryNameSnapshot,
+        productNameSnapshot: s.productNameSnapshot,
+        value: s.soldCount,
+      }))
+    )
   );
   const stockCategories = groupByCategory(
     shift.stockSnapshots.map((s) => ({

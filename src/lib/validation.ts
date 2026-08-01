@@ -7,6 +7,7 @@ export const loginSchema = z.object({
 
 export const sellSchema = z.object({
   quantity: z.number().int().positive().max(100_000),
+  paymentMethod: z.enum(["CASH", "CARD"]),
 });
 
 export const adjustSchema = z.object({

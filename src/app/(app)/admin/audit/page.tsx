@@ -1,5 +1,6 @@
 import { getAuditLog } from "@/lib/data";
 import { formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
+import { AUDIT_LOG_RETENTION_DAYS } from "@/lib/retention";
 
 export default async function AdminAuditPage() {
   const entries = await getAuditLog({});
@@ -8,7 +9,7 @@ export default async function AdminAuditPage() {
     <div>
       <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Audit log</h1>
       <p className="text-sm text-zinc-500 mb-4">
-        Last 30 days of stock changes. Older entries are automatically removed.
+        Last {AUDIT_LOG_RETENTION_DAYS} days of stock changes. Older entries are automatically removed.
       </p>
 
       {entries.length === 0 ? (

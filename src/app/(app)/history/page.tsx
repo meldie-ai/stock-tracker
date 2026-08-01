@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { getClosedShiftsWithinDays } from "@/lib/data";
 import { formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
-
-const HISTORY_RETENTION_DAYS = 30; // matches the cron cleanup's shift retention
+import { SHIFT_RETENTION_DAYS } from "@/lib/retention";
 
 export default async function HistoryPage() {
-  const shifts = await getClosedShiftsWithinDays(HISTORY_RETENTION_DAYS);
+  const shifts = await getClosedShiftsWithinDays(SHIFT_RETENTION_DAYS);
 
   return (
     <div>
@@ -13,7 +12,7 @@ export default async function HistoryPage() {
         Shift history
       </h1>
       <p className="text-sm text-zinc-500 mb-4">
-        Last {HISTORY_RETENTION_DAYS} days of closed shifts. Older shifts are automatically removed.
+        Last {SHIFT_RETENTION_DAYS} days of closed shifts. Older shifts are automatically removed.
       </p>
 
       {shifts.length === 0 ? (

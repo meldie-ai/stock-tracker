@@ -96,6 +96,27 @@ export function formatDateDDMMYY(date: Date): string {
   return `${pad2(day)}/${pad2(month)}/${pad2(year % 100)}`;
 }
 
+/** e.g. "2026-07-24" — the format native <input type="date"> elements use. */
+export function formatDateInputValue(date: Date): string {
+  const { year, month, day } = getShopLocalParts(date);
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
+/** Parses a date-input value ("YYYY-MM-DD") as shop-local midnight. Null if malformed. */
+export function parseShopLocalDateInput(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const [, y, m, d] = match;
+  const date = shopLocalMidnightUtc(Number(y), Number(m), Number(d));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** Shop-local midnight of the day after the given date — a convenient exclusive upper bound. */
+export function shopLocalStartOfNextDay(date: Date): Date {
+  const { year, month, day } = getShopLocalParts(date);
+  return new Date(shopLocalMidnightUtc(year, month, day).getTime() + 24 * 60 * 60 * 1000);
+}
+
 /** e.g. "08:00AM" */
 export function formatTime12(date: Date): string {
   const { hour, minute } = getShopLocalParts(date);

@@ -16,9 +16,9 @@ export async function POST(
   const body = await request.json().catch(() => null);
   const parsed = sellSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid quantity" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid quantity or payment method" }, { status: 400 });
   }
-  const { quantity } = parsed.data;
+  const { quantity, paymentMethod } = parsed.data;
 
   const activeShift = await prisma.shift.findFirst({
     where: { status: "ACTIVE" },
@@ -85,8 +85,10 @@ export async function POST(
         });
       }
 
-      const sale = await tx.shiftSale.upsert({
-        where: { shiftId_productId: { shiftId: activeShift.id, productId } },
+      await tx.shiftSale.upsert({
+        where: {
+          shiftId_productId_paymentMethod: { shiftId: activeShift.id, productId, paymentMethod },
+        },
         create: {
           shiftId: activeShift.id,
           productId,
@@ -95,11 +97,19 @@ export async function POST(
           categorySortOrder: product.category.sortOrder,
           sortOrder: product.sortOrder,
           soldCount: quantity,
+          paymentMethod,
         },
         update: { soldCount: { increment: quantity } },
       });
 
-      return { stockCount: finalStockCount, soldCount: sale.soldCount };
+      // A product can now have a separate row per payment method, so the "sold this shift"
+      // figure shown in the UI is the combined total across both, not just this one row.
+      const totalSold = await tx.shiftSale.aggregate({
+        where: { shiftId: activeShift.id, productId },
+        _sum: { soldCount: true },
+      });
+
+      return { stockCount: finalStockCount, soldCount: totalSold._sum.soldCount ?? 0 };
     });
 
     return NextResponse.json(result);

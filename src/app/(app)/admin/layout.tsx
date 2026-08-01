@@ -20,7 +20,7 @@ export default async function AdminLayout({
           Audit Log
         </Link>
         <Link href="/admin/reports" className="text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-50">
-          Weekly Report
+          Sales Report
         </Link>
       </nav>
       {children}
