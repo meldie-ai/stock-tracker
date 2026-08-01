@@ -21,7 +21,10 @@ export default async function WeeklyReportPage() {
   const totalRestocked = restockedRows.reduce((sum, r) => sum + r.value, 0);
 
   const { since, until } = getWeeklyReportDateRange();
-  const rangeLabel = `${formatDateDDMMYY(since)} – ${formatDateDDMMYY(until)}`;
+  // `until` is the exclusive upper bound (this week's Monday) — step back 1ms to land on
+  // the actual last day covered (last Sunday) for display.
+  const displayUntil = new Date(until.getTime() - 1);
+  const rangeLabel = `${formatDateDDMMYY(since)} – ${formatDateDDMMYY(displayUntil)}`;
 
   return (
     <div>
@@ -38,23 +41,23 @@ export default async function WeeklyReportPage() {
         />
       </div>
       <p className="text-sm text-zinc-500 mb-6">
-        Last 7 days ({rangeLabel}). Only products with activity are listed.
+        Last completed week: Monday {rangeLabel}. Only products with activity are listed.
       </p>
 
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Sold</h2>
-      <p className="text-xs text-zinc-500 mb-3">{totalSold} units sold this week</p>
+      <p className="text-xs text-zinc-500 mb-3">{totalSold} units sold that week</p>
       <div className="mb-8">
         {soldCategories.length === 0 ? (
-          <p className="text-sm text-zinc-500">Nothing sold in the last 7 days.</p>
+          <p className="text-sm text-zinc-500">Nothing sold that week.</p>
         ) : (
           <ShiftBreakdown kind="SOLD" categories={soldCategories} />
         )}
       </div>
 
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Restocked</h2>
-      <p className="text-xs text-zinc-500 mb-3">{totalRestocked} units added this week</p>
+      <p className="text-xs text-zinc-500 mb-3">{totalRestocked} units added that week</p>
       {restockedCategories.length === 0 ? (
-        <p className="text-sm text-zinc-500">No restocking recorded in the last 7 days.</p>
+        <p className="text-sm text-zinc-500">No restocking recorded that week.</p>
       ) : (
         <ShiftBreakdown kind="SOLD" categories={restockedCategories} />
       )}

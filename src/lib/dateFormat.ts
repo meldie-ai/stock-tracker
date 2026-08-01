@@ -58,6 +58,38 @@ export function dayPartLabel(date: Date): string {
   return `${weekdayName} ${dayPart(hour)}`;
 }
 
+const ISO_WEEKDAY: Record<string, number> = {
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+  Sunday: 7,
+};
+
+function shopLocalMidnightUtc(year: number, month: number, day: number): Date {
+  // Shop-local midnight expressed as the equivalent UTC instant. Safe as a fixed
+  // offset year-round since Queensland doesn't observe daylight saving.
+  const SHOP_UTC_OFFSET_HOURS = 10;
+  return new Date(Date.UTC(year, month - 1, day) - SHOP_UTC_OFFSET_HOURS * 60 * 60 * 1000);
+}
+
+/**
+ * The most recently *completed* Monday-Sunday week in shop-local time. Regardless of which
+ * day it's checked, this always looks back to the last full week, not the in-progress one —
+ * e.g. checked on a Wednesday, it returns the Monday-Sunday that ended the Sunday before last.
+ * `until` is exclusive (this week's Monday 00:00), so pair with `startedAt: { gte, lt }`.
+ */
+export function getLastCompletedWeekRange(now: Date = new Date()): { since: Date; until: Date } {
+  const { year, month, day, weekdayName } = getShopLocalParts(now);
+  const todayMidnightUtc = shopLocalMidnightUtc(year, month, day);
+  const daysSinceMonday = ISO_WEEKDAY[weekdayName] - 1;
+  const thisWeekMonday = new Date(todayMidnightUtc.getTime() - daysSinceMonday * 24 * 60 * 60 * 1000);
+  const lastWeekMonday = new Date(thisWeekMonday.getTime() - 7 * 24 * 60 * 60 * 1000);
+  return { since: lastWeekMonday, until: thisWeekMonday };
+}
+
 /** e.g. "24/07/26" — built manually to avoid locale-dependent DD/MM vs MM/DD ambiguity. */
 export function formatDateDDMMYY(date: Date): string {
   const { day, month, year } = getShopLocalParts(date);

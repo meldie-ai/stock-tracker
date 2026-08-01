@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getLastCompletedWeekRange } from "@/lib/dateFormat";
 import type { ShiftTextCategory } from "@/lib/textTemplates";
 
 export async function getCategoriesWithProducts() {
@@ -83,12 +84,12 @@ export async function getAuditLog(filters: { userId?: string; productId?: string
   });
 }
 
-const WEEKLY_REPORT_DAYS = 7; // matches the shift retention window, so no data is missing
-
-/** since/until for the trailing weekly-report window; also used to label it in the UI. */
-export function getWeeklyReportDateRange(): { since: Date; until: Date } {
-  return { since: new Date(Date.now() - WEEKLY_REPORT_DAYS * 24 * 60 * 60 * 1000), until: new Date() };
-}
+/**
+ * since/until for the weekly report: the last completed Monday-Sunday week, not the
+ * in-progress current one. `until` is exclusive. Re-exported from dateFormat so callers
+ * only need to import from one place.
+ */
+export const getWeeklyReportDateRange = getLastCompletedWeekRange;
 
 function aggregateByProduct(
   rows: { categoryNameSnapshot: string; productNameSnapshot: string; value: number }[]
@@ -112,11 +113,11 @@ function aggregateByProduct(
     );
 }
 
-/** Total units sold per product over the last 7 days (across every shift that started in that window). */
+/** Total units sold per product during the last completed Monday-Sunday week. */
 export async function getWeeklySoldSummary() {
-  const { since } = getWeeklyReportDateRange();
+  const { since, until } = getWeeklyReportDateRange();
   const sales = await prisma.shiftSale.findMany({
-    where: { shift: { startedAt: { gte: since } } },
+    where: { shift: { startedAt: { gte: since, lt: until } } },
     select: {
       categoryNameSnapshot: true,
       productNameSnapshot: true,
@@ -137,11 +138,11 @@ export async function getWeeklySoldSummary() {
   );
 }
 
-/** Total units restocked (positive Adjust-stock corrections) per product over the last 7 days. */
+/** Total units restocked (positive Adjust-stock corrections) per product during the last completed week. */
 export async function getWeeklyRestockedSummary() {
-  const { since } = getWeeklyReportDateRange();
+  const { since, until } = getWeeklyReportDateRange();
   const entries = await prisma.auditLog.findMany({
-    where: { action: "ADJUST", quantityDelta: { gt: 0 }, createdAt: { gte: since } },
+    where: { action: "ADJUST", quantityDelta: { gt: 0 }, createdAt: { gte: since, lt: until } },
     select: {
       categoryNameSnapshot: true,
       productNameSnapshot: true,

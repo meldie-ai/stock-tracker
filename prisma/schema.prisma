@@ -128,8 +128,9 @@ model AuditLog {
   stockBefore   Int
   stockAfter    Int
 
-  // Informational only, no FK: Shift rows purge at 7 days but AuditLog
-  // lives 14, so a real relation would go stale for half the row's life.
+  // Informational only, no FK: Shift and AuditLog rows are purged by
+  // separate, non-transactional cron deletes, so a real relation could
+  // still go stale between the two even though both currently keep 14 days.
   shiftId String?
   note    String?
 
