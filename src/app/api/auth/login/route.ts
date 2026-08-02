@@ -25,8 +25,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const user = await prisma.user.findUnique({
-    where: { username: normalizedUsername },
+  // Username is stored with its original casing (e.g. "Minsel@kp"), so login must match
+  // case-insensitively rather than relying on both sides being pre-lowercased.
+  const user = await prisma.user.findFirst({
+    where: { username: { equals: username, mode: "insensitive" } },
   });
 
   const valid =

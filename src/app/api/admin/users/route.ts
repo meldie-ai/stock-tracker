@@ -14,8 +14,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid username or password" }, { status: 400 });
   }
 
-  const username = parsed.data.username.toLowerCase();
-  const existing = await prisma.user.findUnique({ where: { username } });
+  // Stored exactly as typed so it displays the way the admin intended (e.g. "Minsel@kp").
+  // Login still matches case-insensitively, so uniqueness must be checked the same way —
+  // otherwise "Minsel" and "minsel" could both be created as distinct accounts.
+  const username = parsed.data.username.trim();
+  const existing = await prisma.user.findFirst({
+    where: { username: { equals: username, mode: "insensitive" } },
+  });
   if (existing) {
     return NextResponse.json({ error: "That username is already taken" }, { status: 409 });
   }
