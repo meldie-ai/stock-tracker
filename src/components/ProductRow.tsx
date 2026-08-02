@@ -17,7 +17,11 @@ export default function ProductRow({
   cashPriceCents,
   cardPriceCents,
   dealNote,
+  dealQuantity,
+  dealPriceCents,
   showPriceEditor = true,
+  onAddToDeal,
+  dealCartQuantity = 0,
 }: {
   productId: string;
   name: string;
@@ -27,7 +31,11 @@ export default function ProductRow({
   cashPriceCents: number | null;
   cardPriceCents: number | null;
   dealNote: string | null;
+  dealQuantity: number | null;
+  dealPriceCents: number | null;
   showPriceEditor?: boolean;
+  onAddToDeal?: (quantity: number) => void;
+  dealCartQuantity?: number;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -38,6 +46,8 @@ export default function ProductRow({
   const [cashPriceValue, setCashPriceValue] = useState(centsToInputValue(cashPriceCents));
   const [cardPriceValue, setCardPriceValue] = useState(centsToInputValue(cardPriceCents));
   const [dealNoteValue, setDealNoteValue] = useState(dealNote ?? "");
+  const [dealQuantityValue, setDealQuantityValue] = useState(dealQuantity !== null ? String(dealQuantity) : "");
+  const [dealPriceValue, setDealPriceValue] = useState(centsToInputValue(dealPriceCents));
   const [error, setError] = useState<string | null>(null);
 
   const soldOut = stockCount === 0;
@@ -81,6 +91,17 @@ export default function ProductRow({
     });
   }
 
+  function handleAddToDeal() {
+    const quantity = Number(sellQty);
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      setError("Enter a positive whole number");
+      return;
+    }
+    setError(null);
+    onAddToDeal?.(quantity);
+    setSellQty("1");
+  }
+
   function handleAdjustSave() {
     const value = Number(adjustValue);
     if (!Number.isInteger(value) || value < 0) {
@@ -116,6 +137,20 @@ export default function ProductRow({
       setError("Enter a price of 0 or more");
       return;
     }
+    const dealQty = dealQuantityValue.trim() === "" ? null : Number(dealQuantityValue);
+    const dealPrice = parsePriceInput(dealPriceValue);
+    if (dealPrice === "invalid") {
+      setError("Enter a deal price of 0 or more");
+      return;
+    }
+    if (dealQty !== null && (!Number.isInteger(dealQty) || dealQty <= 0)) {
+      setError("Deal quantity must be a positive whole number");
+      return;
+    }
+    if ((dealQty === null) !== (dealPrice === null)) {
+      setError("Enter both deal quantity and price, or leave both blank");
+      return;
+    }
     setError(null);
     startTransition(async () => {
       try {
@@ -126,6 +161,8 @@ export default function ProductRow({
             cashPriceCents: cash,
             cardPriceCents: card,
             dealNote: dealNoteValue.trim(),
+            dealQuantity: dealQty,
+            dealPriceCents: dealPrice,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -147,6 +184,11 @@ export default function ProductRow({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
             {name}
+            {dealCartQuantity > 0 && (
+              <span className="ml-1.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 text-[10px] font-semibold align-middle">
+                {dealCartQuantity} staged
+              </span>
+            )}
           </p>
           <p className="text-xs text-zinc-500">
             Stock: <span className={`font-semibold ${stockColorClass}`}>{stockCount}</span>
@@ -173,6 +215,14 @@ export default function ProductRow({
               </>
             )}
             {showPriceEditor && dealNote && <> · {dealNote}</>}
+            {showPriceEditor && dealQuantity !== null && dealPriceCents !== null && (
+              <>
+                {" · "}
+                <span className="font-semibold text-red-600 dark:text-red-400">
+                  Deal: {dealQuantity} for {formatPrice(dealPriceCents)} (cash)
+                </span>
+              </>
+            )}
           </p>
         </div>
 
@@ -206,6 +256,15 @@ export default function ProductRow({
           >
             Card
           </button>
+          {onAddToDeal && (
+            <button
+              onClick={handleAddToDeal}
+              disabled={isPending}
+              className="rounded-md border border-blue-600 px-2.5 py-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 disabled:opacity-50"
+            >
+              + Deal
+            </button>
+          )}
         </div>
       )}
 
@@ -255,6 +314,8 @@ export default function ProductRow({
                 setCashPriceValue(centsToInputValue(cashPriceCents));
                 setCardPriceValue(centsToInputValue(cardPriceCents));
                 setDealNoteValue(dealNote ?? "");
+                setDealQuantityValue(dealQuantity !== null ? String(dealQuantity) : "");
+                setDealPriceValue(centsToInputValue(dealPriceCents));
                 setPriceOpen(true);
               }}
               className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
@@ -289,6 +350,26 @@ export default function ProductRow({
                 value={dealNoteValue}
                 onChange={(e) => setDealNoteValue(e.target.value)}
                 className="min-w-[140px] flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
+              />
+              <span className="text-xs text-zinc-500">Deal: buy</span>
+              <input
+                type="number"
+                min={1}
+                step="1"
+                placeholder="Qty"
+                value={dealQuantityValue}
+                onChange={(e) => setDealQuantityValue(e.target.value)}
+                className="w-14 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
+              />
+              <span className="text-xs text-zinc-500">for $ (cash)</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="Total"
+                value={dealPriceValue}
+                onChange={(e) => setDealPriceValue(e.target.value)}
+                className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
               />
               <button
                 onClick={handlePriceSave}

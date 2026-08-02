@@ -1,5 +1,5 @@
-import ProductRow from "@/components/ProductRow";
 import CategoryPriceEditor from "@/components/CategoryPriceEditor";
+import CategoryDealCart from "@/components/CategoryDealCart";
 
 type Product = {
   id: string;
@@ -8,6 +8,8 @@ type Product = {
   cashPriceCents: number | null;
   cardPriceCents: number | null;
   dealNote: string | null;
+  dealQuantity: number | null;
+  dealPriceCents: number | null;
 };
 
 export default function CategorySection({
@@ -16,6 +18,8 @@ export default function CategorySection({
   categoryCashPriceCents,
   categoryCardPriceCents,
   categoryDealNote,
+  categoryDealQuantity,
+  categoryDealPriceCents,
   products,
   soldByProductId,
   hasActiveShift,
@@ -25,12 +29,12 @@ export default function CategorySection({
   categoryCashPriceCents: number | null;
   categoryCardPriceCents: number | null;
   categoryDealNote: string | null;
+  categoryDealQuantity: number | null;
+  categoryDealPriceCents: number | null;
   products: Product[];
   soldByProductId: Map<string, number>;
   hasActiveShift: boolean;
 }) {
-  const hasCategoryPrice = categoryCashPriceCents !== null || categoryCardPriceCents !== null;
-
   return (
     <section className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-16">
       <h2 className="whitespace-pre-line text-sm font-bold uppercase tracking-wide text-zinc-900 dark:text-zinc-50 mb-2">
@@ -41,25 +45,18 @@ export default function CategorySection({
         cashPriceCents={categoryCashPriceCents}
         cardPriceCents={categoryCardPriceCents}
         dealNote={categoryDealNote}
+        dealQuantity={categoryDealQuantity}
+        dealPriceCents={categoryDealPriceCents}
       />
-      {products.length === 0 ? (
-        <p className="text-sm text-zinc-400">No products yet.</p>
-      ) : (
-        products.map((product) => (
-          <ProductRow
-            key={product.id}
-            productId={product.id}
-            name={product.name}
-            stockCount={product.stockCount}
-            soldCount={soldByProductId.get(product.id) ?? null}
-            hasActiveShift={hasActiveShift}
-            cashPriceCents={product.cashPriceCents}
-            cardPriceCents={product.cardPriceCents}
-            dealNote={product.dealNote}
-            showPriceEditor={!hasCategoryPrice}
-          />
-        ))
-      )}
+      <CategoryDealCart
+        categoryCashPriceCents={categoryCashPriceCents}
+        categoryCardPriceCents={categoryCardPriceCents}
+        categoryDealQuantity={categoryDealQuantity}
+        categoryDealPriceCents={categoryDealPriceCents}
+        products={products}
+        soldByProductId={soldByProductId}
+        hasActiveShift={hasActiveShift}
+      />
     </section>
   );
 }

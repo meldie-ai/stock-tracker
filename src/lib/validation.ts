@@ -50,4 +50,18 @@ export const priceSchema = z.object({
   cashPriceCents: z.number().int().min(0).max(1_000_000).nullable().optional(),
   cardPriceCents: z.number().int().min(0).max(1_000_000).nullable().optional(),
   dealNote: z.string().trim().max(60).nullable().optional(),
+  dealQuantity: z.number().int().positive().max(1000).nullable().optional(),
+  dealPriceCents: z.number().int().min(0).max(1_000_000).nullable().optional(),
+});
+
+export const dealSellSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        quantity: z.number().int().positive().max(100_000),
+      })
+    )
+    .min(1)
+    .max(50),
 });

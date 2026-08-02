@@ -62,6 +62,12 @@ model Category {
   cashPriceCents Int?
   cardPriceCents Int?
   dealNote       String?
+  // Cash-only "N for $X" bundle deal, structured for calculation (dealNote stays
+  // as free display text alongside this). Same category-overrides-product
+  // precedence as cashPriceCents/cardPriceCents: when set here, every product in
+  // the category shares this one deal instead of having its own.
+  dealQuantity   Int?
+  dealPriceCents Int?
   products       Product[]
 }
 
@@ -79,6 +85,13 @@ model Product {
   // Plain text bundle note (e.g. "3 for $50") — not a calculated price
   // override.
   dealNote       String?
+  // Structured cash-only deal used by the deal cart, e.g. dealQuantity=3,
+  // dealPriceCents=4000 for "3 for $40". Different products in the same category
+  // can carry different deals (e.g. cigarette brands priced/deal'd individually);
+  // the deal cart only lets products with an identical dealQuantity+dealPriceCents
+  // combine into one sale. Ignored when the category has its own deal set.
+  dealQuantity   Int?
+  dealPriceCents Int?
   sortOrder      Int      @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -179,6 +192,11 @@ model ShiftSale {
   // Null on rows from before payment-method tracking was added; every sale going forward
   // sets one. A product can now have up to two rows per shift, one per method.
   paymentMethod        PaymentMethod?
+  // Amount actually charged for soldCount units in this row, locked in at the
+  // moment of each sale (unit price × quantity, or an allocated share of a deal's
+  // total) — not recomputed later from the current price, so later price/deal
+  // changes never retroactively alter past revenue.
+  revenueCentsCollected Int     @default(0)
 
   @@unique([shiftId, productId, paymentMethod])
   @@index([shiftId])

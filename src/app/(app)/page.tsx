@@ -40,6 +40,8 @@ export default async function DashboardPage() {
               categoryCashPriceCents={category.cashPriceCents}
               categoryCardPriceCents={category.cardPriceCents}
               categoryDealNote={category.dealNote}
+              categoryDealQuantity={category.dealQuantity}
+              categoryDealPriceCents={category.dealPriceCents}
               products={category.products}
               soldByProductId={soldByProductId}
               hasActiveShift={!!activeShift}

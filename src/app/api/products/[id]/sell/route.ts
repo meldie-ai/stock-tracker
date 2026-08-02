@@ -4,6 +4,7 @@ import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
 import { sellSchema } from "@/lib/validation";
 import { tryCascadeSinglesFromCarton } from "@/lib/cartonCascade";
 import { recordAuditEntry } from "@/lib/auditLog";
+import { resolveUnitPriceCents } from "@/lib/pricing";
 
 export async function POST(
   request: NextRequest,
@@ -85,6 +86,9 @@ export async function POST(
         });
       }
 
+      const unitPriceCents = resolveUnitPriceCents(product, product.category, paymentMethod);
+      const revenueCents = (unitPriceCents ?? 0) * quantity;
+
       await tx.shiftSale.upsert({
         where: {
           shiftId_productId_paymentMethod: { shiftId: activeShift.id, productId, paymentMethod },
@@ -98,8 +102,12 @@ export async function POST(
           sortOrder: product.sortOrder,
           soldCount: quantity,
           paymentMethod,
+          revenueCentsCollected: revenueCents,
         },
-        update: { soldCount: { increment: quantity } },
+        update: {
+          soldCount: { increment: quantity },
+          revenueCentsCollected: { increment: revenueCents },
+        },
       });
 
       // A product can now have a separate row per payment method, so the "sold this shift"

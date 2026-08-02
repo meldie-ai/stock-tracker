@@ -179,43 +179,22 @@ export async function getRestockedSummary(since: Date, until: Date) {
 }
 
 /**
- * Cash/card revenue for a date range. Only counts sales that have a recorded payment method
- * (rows from before that feature existed are skipped here, though their quantity still shows
- * in getSoldSummary) and a resolvable price. Mirrors CategorySection's exact pricing rule: a
- * category price, if set at all, applies to every product in it and individual prices are
- * ignored entirely — it's not a per-field fallback.
+ * Cash/card revenue for a date range. Sums the amount actually collected at the moment of
+ * each sale (revenueCentsCollected), locked in at sale time by the sell/deal-sell routes —
+ * not recomputed from current prices, so later price or deal changes never retroactively
+ * alter past revenue, and deal sales (priced as a bundle, not per-unit) are represented
+ * correctly. Only counts rows with a recorded payment method (rows from before that feature
+ * existed are skipped, though their quantity still shows in getSoldSummary).
  */
 export async function getRevenueSummary(since: Date, until: Date) {
-  const sales = await prisma.shiftSale.findMany({
+  const sums = await prisma.shiftSale.groupBy({
+    by: ["paymentMethod"],
     where: { shift: { startedAt: { gte: since, lt: until } }, paymentMethod: { not: null } },
-    select: {
-      soldCount: true,
-      paymentMethod: true,
-      product: {
-        select: {
-          cashPriceCents: true,
-          cardPriceCents: true,
-          category: { select: { cashPriceCents: true, cardPriceCents: true } },
-        },
-      },
-    },
+    _sum: { revenueCentsCollected: true },
   });
 
-  let cashRevenueCents = 0;
-  let cardRevenueCents = 0;
-
-  for (const sale of sales) {
-    if (!sale.product) continue; // product deleted since the sale; price can't be resolved
-    const category = sale.product.category;
-    const hasCategoryPrice = category.cashPriceCents !== null || category.cardPriceCents !== null;
-    const cashPriceCents = hasCategoryPrice ? category.cashPriceCents : sale.product.cashPriceCents;
-    const cardPriceCents = hasCategoryPrice ? category.cardPriceCents : sale.product.cardPriceCents;
-    const priceCents = sale.paymentMethod === "CASH" ? cashPriceCents : cardPriceCents;
-    if (priceCents === null) continue; // never priced; quantity still counted in getSoldSummary
-
-    if (sale.paymentMethod === "CASH") cashRevenueCents += priceCents * sale.soldCount;
-    else cardRevenueCents += priceCents * sale.soldCount;
-  }
+  const cashRevenueCents = sums.find((s) => s.paymentMethod === "CASH")?._sum.revenueCentsCollected ?? 0;
+  const cardRevenueCents = sums.find((s) => s.paymentMethod === "CARD")?._sum.revenueCentsCollected ?? 0;
 
   return { cashRevenueCents, cardRevenueCents, totalRevenueCents: cashRevenueCents + cardRevenueCents };
 }

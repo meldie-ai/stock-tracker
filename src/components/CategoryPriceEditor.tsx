@@ -10,11 +10,15 @@ export default function CategoryPriceEditor({
   cashPriceCents,
   cardPriceCents,
   dealNote,
+  dealQuantity,
+  dealPriceCents,
 }: {
   categoryId: string;
   cashPriceCents: number | null;
   cardPriceCents: number | null;
   dealNote: string | null;
+  dealQuantity: number | null;
+  dealPriceCents: number | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -22,15 +26,32 @@ export default function CategoryPriceEditor({
   const [cashPriceValue, setCashPriceValue] = useState(centsToInputValue(cashPriceCents));
   const [cardPriceValue, setCardPriceValue] = useState(centsToInputValue(cardPriceCents));
   const [dealNoteValue, setDealNoteValue] = useState(dealNote ?? "");
+  const [dealQuantityValue, setDealQuantityValue] = useState(dealQuantity !== null ? String(dealQuantity) : "");
+  const [dealPriceValue, setDealPriceValue] = useState(centsToInputValue(dealPriceCents));
   const [error, setError] = useState<string | null>(null);
 
   const hasPrice = cashPriceCents !== null || cardPriceCents !== null;
+  const hasDeal = dealQuantity !== null && dealPriceCents !== null;
 
   function handleSave() {
     const cash = parsePriceInput(cashPriceValue);
     const card = parsePriceInput(cardPriceValue);
     if (cash === "invalid" || card === "invalid") {
       setError("Enter a price of 0 or more");
+      return;
+    }
+    const dealQty = dealQuantityValue.trim() === "" ? null : Number(dealQuantityValue);
+    const dealPrice = parsePriceInput(dealPriceValue);
+    if (dealPrice === "invalid") {
+      setError("Enter a deal price of 0 or more");
+      return;
+    }
+    if (dealQty !== null && (!Number.isInteger(dealQty) || dealQty <= 0)) {
+      setError("Deal quantity must be a positive whole number");
+      return;
+    }
+    if ((dealQty === null) !== (dealPrice === null)) {
+      setError("Enter both deal quantity and price, or leave both blank");
       return;
     }
     setError(null);
@@ -43,6 +64,8 @@ export default function CategoryPriceEditor({
             cashPriceCents: cash,
             cardPriceCents: card,
             dealNote: dealNoteValue.trim(),
+            dealQuantity: dealQty,
+            dealPriceCents: dealPrice,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -60,7 +83,7 @@ export default function CategoryPriceEditor({
 
   return (
     <div className="mb-2">
-      {hasPrice && (
+      {(hasPrice || hasDeal) && (
         <p className="text-xs text-zinc-500 mb-1">
           {cashPriceCents !== null && (
             <span className="font-semibold text-red-600 dark:text-red-400">
@@ -74,6 +97,14 @@ export default function CategoryPriceEditor({
             </span>
           )}
           {dealNote && <> · {dealNote}</>}
+          {hasDeal && (
+            <>
+              {" · "}
+              <span className="font-semibold text-red-600 dark:text-red-400">
+                Deal: {dealQuantity} for {formatPrice(dealPriceCents!)} (cash)
+              </span>
+            </>
+          )}
         </p>
       )}
       {!open ? (
@@ -82,6 +113,8 @@ export default function CategoryPriceEditor({
             setCashPriceValue(centsToInputValue(cashPriceCents));
             setCardPriceValue(centsToInputValue(cardPriceCents));
             setDealNoteValue(dealNote ?? "");
+            setDealQuantityValue(dealQuantity !== null ? String(dealQuantity) : "");
+            setDealPriceValue(centsToInputValue(dealPriceCents));
             setOpen(true);
           }}
           className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
@@ -116,6 +149,26 @@ export default function CategoryPriceEditor({
             value={dealNoteValue}
             onChange={(e) => setDealNoteValue(e.target.value)}
             className="min-w-[140px] flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
+          />
+          <span className="text-xs text-zinc-500">Deal: buy</span>
+          <input
+            type="number"
+            min={1}
+            step="1"
+            placeholder="Qty"
+            value={dealQuantityValue}
+            onChange={(e) => setDealQuantityValue(e.target.value)}
+            className="w-14 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
+          />
+          <span className="text-xs text-zinc-500">for $ (cash)</span>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder="Total"
+            value={dealPriceValue}
+            onChange={(e) => setDealPriceValue(e.target.value)}
+            className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
           />
           <button
             onClick={handleSave}
