@@ -30,7 +30,7 @@ export default async function AdminAuditPage() {
                 </span>
               </div>
               <p className="text-xs text-zinc-500 mt-1">
-                {entry.action} by <span className="uppercase">{entry.usernameSnapshot}</span> · {entry.stockBefore} &rarr;{" "}
+                {entry.action} by {entry.usernameSnapshot} · {entry.stockBefore} &rarr;{" "}
                 {entry.stockAfter}
                 {entry.note ? ` · ${entry.note}` : ""}
               </p>

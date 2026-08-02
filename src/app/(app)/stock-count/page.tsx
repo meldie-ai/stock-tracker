@@ -41,14 +41,14 @@ export default async function StockCountPage() {
                     {formatDateDDMMYY(activeShift.startedAt)} {formatTime12(activeShift.startedAt)}
                   </span>{" "}
                   ({dayPartLabel(activeShift.startedAt)}) &middot; Started by{" "}
-                  <span className="font-medium uppercase">{activeShift.startedByUser.username}</span>
+                  <span className="font-medium">{activeShift.startedByUser.username}</span>
                 </p>
                 <CopyButton
                   text={buildCategoriesCopyText(
                     [
                       "Stock Count",
                       `Shift active since ${formatDateDDMMYY(activeShift.startedAt)} ${formatTime12(activeShift.startedAt)} (${dayPartLabel(activeShift.startedAt)})`,
-                      `Started by ${activeShift.startedByUser.username.toUpperCase()}`,
+                      `Started by ${activeShift.startedByUser.username}`,
                     ],
                     categories
                   )}

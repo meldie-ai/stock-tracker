@@ -111,7 +111,7 @@ export default function AdminStaffClient({ users }: { users: StaffUser[] }) {
           className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-3"
         >
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-            <span className="uppercase">{user.username}</span>{" "}
+            {user.username}{" "}
             <span className="text-xs font-normal text-zinc-400">({user.role})</span>
           </p>
           <p className="text-xs text-zinc-500">
