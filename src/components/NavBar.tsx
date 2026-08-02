@@ -153,7 +153,7 @@ export default function NavBar({
             </nav>
 
             <div className="flex items-center justify-between border-t border-black/10 dark:border-zinc-900 pt-3">
-              <span className="text-sm text-zinc-500">{username}</span>
+              <span className="text-sm text-zinc-500 uppercase">{username}</span>
               <button
                 onClick={handleLogout}
                 className="text-sm text-zinc-500 hover:text-red-600"

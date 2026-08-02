@@ -96,14 +96,15 @@ export default function CategoryPriceEditor({
               Card {formatPrice(cardPriceCents)} each
             </span>
           )}
-          {dealNote && <> · {dealNote}</>}
-          {hasDeal && (
+          {hasDeal ? (
             <>
               {" · "}
               <span className="font-semibold text-red-600 dark:text-red-400">
                 Deal: {dealQuantity} for {formatPrice(dealPriceCents!)} (cash)
               </span>
             </>
+          ) : (
+            dealNote && <> · {dealNote}</>
           )}
         </p>
       )}

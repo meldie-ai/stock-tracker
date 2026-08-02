@@ -53,7 +53,7 @@ export default function ShiftControls({
             {startedByUsername && (
               <>
                 {" "}
-                &middot; Started by <span className="font-medium">{startedByUsername}</span>
+                &middot; Started by <span className="font-medium uppercase">{startedByUsername}</span>
               </>
             )}
           </p>
