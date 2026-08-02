@@ -25,7 +25,6 @@ export default function CategoryPriceEditor({
   const [open, setOpen] = useState(false);
   const [cashPriceValue, setCashPriceValue] = useState(centsToInputValue(cashPriceCents));
   const [cardPriceValue, setCardPriceValue] = useState(centsToInputValue(cardPriceCents));
-  const [dealNoteValue, setDealNoteValue] = useState(dealNote ?? "");
   const [dealQuantityValue, setDealQuantityValue] = useState(dealQuantity !== null ? String(dealQuantity) : "");
   const [dealPriceValue, setDealPriceValue] = useState(centsToInputValue(dealPriceCents));
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +62,6 @@ export default function CategoryPriceEditor({
           body: JSON.stringify({
             cashPriceCents: cash,
             cardPriceCents: card,
-            dealNote: dealNoteValue.trim(),
             dealQuantity: dealQty,
             dealPriceCents: dealPrice,
           }),
@@ -113,7 +111,6 @@ export default function CategoryPriceEditor({
           onClick={() => {
             setCashPriceValue(centsToInputValue(cashPriceCents));
             setCardPriceValue(centsToInputValue(cardPriceCents));
-            setDealNoteValue(dealNote ?? "");
             setDealQuantityValue(dealQuantity !== null ? String(dealQuantity) : "");
             setDealPriceValue(centsToInputValue(dealPriceCents));
             setOpen(true);
@@ -143,13 +140,6 @@ export default function CategoryPriceEditor({
             value={cardPriceValue}
             onChange={(e) => setCardPriceValue(e.target.value)}
             className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
-          />
-          <input
-            type="text"
-            placeholder="Deal note, e.g. 3 for $50"
-            value={dealNoteValue}
-            onChange={(e) => setDealNoteValue(e.target.value)}
-            className="min-w-[140px] flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
           />
           <span className="text-xs text-zinc-500">Deal: buy</span>
           <input
