@@ -4,8 +4,8 @@
  * audit log, and the sales report can never show data older than this — kept in one place
  * so the cron and every page that surfaces a "may be incomplete" note stay in sync.
  */
-export const SHIFT_RETENTION_DAYS = 30;
-export const AUDIT_LOG_RETENTION_DAYS = 30;
+export const SHIFT_RETENTION_DAYS = 90;
+export const AUDIT_LOG_RETENTION_DAYS = 90;
 
 /** The oldest a Shift row (and its sales/stock snapshots) can be right now before it's purged. */
 export function getShiftRetentionCutoff(): Date {
