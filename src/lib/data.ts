@@ -367,7 +367,7 @@ export async function getShiftPaymentBreakdown(shiftId: string): Promise<Payment
     const categoryName = e.product?.category.name ?? e.categoryNameSnapshot;
     const productName = e.product?.name ?? e.productNameSnapshot;
     const grouped = e.product ? hasCategoryPrice(e.product.category) : false;
-    const key = grouped ? categoryName : `${categoryName} — ${productName}`;
+    const key = grouped ? categoryName : `${categoryName} · ${productName}`;
     const row = byKey.get(key) ?? { label: key, cash: 0, card: 0, deal: 0 };
     if (e.note === "Cash sale") row.cash += units;
     else if (e.note === "Card sale") row.card += units;

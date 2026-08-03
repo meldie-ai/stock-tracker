@@ -131,12 +131,14 @@ export default async function ShiftDetailPage({
           <summary className="cursor-pointer text-sm font-medium text-zinc-600 dark:text-zinc-400">
             See detailed breakdown
           </summary>
-          <div className="mt-2 flex flex-col gap-1 text-sm">
+          <div className="mt-2 flex flex-col gap-2.5 text-sm">
             {paymentBreakdown.map((row) => (
-              <p key={row.label} className="text-zinc-700 dark:text-zinc-300">
-                <span className="font-medium text-zinc-900 dark:text-zinc-50">{row.label}</span>
-                {" — "}Cash: {row.cash}, Card: {row.card}, Deal: {row.deal}
-              </p>
+              <div key={row.label}>
+                <p className="font-medium text-zinc-900 dark:text-zinc-50">{row.label}</p>
+                <p className="text-xs text-zinc-500">
+                  Cash {row.cash} &middot; Card {row.card} &middot; Deal {row.deal}
+                </p>
+              </div>
             ))}
           </div>
         </details>
