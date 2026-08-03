@@ -49,7 +49,7 @@ export default async function HistoryPage() {
                   {shift.endedAt &&
                     `${formatDateDDMMYY(shift.endedAt)} ${formatTime12(shift.endedAt)}`}
                 </p>
-                <p className="text-xs font-bold uppercase text-zinc-700 dark:text-zinc-300">
+                <p className="text-xs font-bold uppercase text-blue-700 dark:text-blue-400">
                   {dayPartRangeLabel}
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">
