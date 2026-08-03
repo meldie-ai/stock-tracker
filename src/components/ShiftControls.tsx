@@ -128,8 +128,8 @@ export default function ShiftControls({
           <div className="mt-4 pt-3 border-t border-black/10 dark:border-zinc-900">
             <p className="text-xs font-medium text-zinc-500 mb-2">Notes</p>
             {notes.length > 0 && (
-              <div className="flex flex-col gap-1.5 mb-2">
-                {notes.map((note) => (
+              <div className="flex flex-col gap-1.5 mb-2 max-h-40 overflow-y-auto pr-1">
+                {[...notes].reverse().map((note) => (
                   <div key={note.id} className="text-sm">
                     <span className="text-zinc-700 dark:text-zinc-300">{note.text}</span>{" "}
                     <span className="text-xs text-zinc-400">
