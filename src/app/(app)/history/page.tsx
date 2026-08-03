@@ -29,6 +29,12 @@ export default async function HistoryPage() {
       ) : (
         shifts.map((shift) => {
           const revenue = revenueTotals?.get(shift.id);
+          const startDayPart = dayPartLabel(shift.startedAt);
+          const endDayPart = shift.endedAt ? dayPartLabel(shift.endedAt) : null;
+          const dayPartRangeLabel =
+            endDayPart && endDayPart !== startDayPart
+              ? `${startDayPart} – ${endDayPart}`
+              : startDayPart;
           return (
             <Link
               key={shift.id}
@@ -44,7 +50,7 @@ export default async function HistoryPage() {
                     `${formatDateDDMMYY(shift.endedAt)} ${formatTime12(shift.endedAt)}`}
                 </p>
                 <p className="text-xs font-bold uppercase text-zinc-700 dark:text-zinc-300">
-                  {dayPartLabel(shift.startedAt)}
+                  {dayPartRangeLabel}
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">
                   View sold &amp; stock breakdown
