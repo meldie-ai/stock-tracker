@@ -129,7 +129,7 @@ export default async function SalesReportPage({
         {restockedCategories.length === 0 ? (
           <p className="text-sm text-zinc-500">No restocking recorded this shift.</p>
         ) : (
-          <ShiftBreakdown kind="SOLD" categories={restockedCategories} />
+          <ShiftBreakdown kind="RESTOCKED" categories={restockedCategories} />
         )}
       </div>
     );
@@ -237,7 +237,7 @@ export default async function SalesReportPage({
       {restockedCategories.length === 0 ? (
         <p className="text-sm text-zinc-500">No restocking recorded in this range.</p>
       ) : (
-        <ShiftBreakdown kind="SOLD" categories={restockedCategories} />
+        <ShiftBreakdown kind="RESTOCKED" categories={restockedCategories} />
       )}
     </div>
   );

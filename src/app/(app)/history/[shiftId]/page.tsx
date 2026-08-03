@@ -145,7 +145,7 @@ export default async function ShiftDetailPage({
         {restockedCategories.length === 0 ? (
           <p className="text-sm text-zinc-500">No restocking recorded this shift.</p>
         ) : (
-          <ShiftBreakdown kind="SOLD" categories={restockedCategories} />
+          <ShiftBreakdown kind="RESTOCKED" categories={restockedCategories} />
         )}
       </div>
 
