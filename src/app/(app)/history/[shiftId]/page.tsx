@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   getShiftDeductions,
@@ -59,6 +60,12 @@ export default async function ShiftDetailPage({
 
   return (
     <div>
+      <Link
+        href="/history"
+        className="mb-2 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+      >
+        &larr; Shift History
+      </Link>
       <div className="flex items-start justify-between gap-3 mb-1">
         <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Shift details</h1>
         <CopyButton
