@@ -1,7 +1,9 @@
 import {
   getClosedShiftsWithinDays,
+  getDeductedSummary,
   getRestockedSummary,
   getRevenueSummary,
+  getShiftDeductedSummary,
   getShiftDetail,
   getShiftRestockedSummary,
   getShiftRevenueSummary,
@@ -47,9 +49,11 @@ export default async function SalesReportPage({
       )
     );
     const restockedCategories = groupByCategory(await getShiftRestockedSummary(selectedShift.id));
+    const deductedCategories = groupByCategory(await getShiftDeductedSummary(selectedShift.id));
     const revenue = await getShiftRevenueSummary(selectedShift.id);
     const totalSold = soldCategories.reduce((sum, c) => sum + c.products.reduce((s, p) => s + p.value, 0), 0);
     const totalRestocked = restockedCategories.reduce((sum, c) => sum + c.products.reduce((s, p) => s + p.value, 0), 0);
+    const totalDeducted = deductedCategories.reduce((sum, c) => sum + c.products.reduce((s, p) => s + p.value, 0), 0);
 
     const dateRangeLabel = `${formatDateDDMMYY(selectedShift.startedAt)} ${formatTime12(selectedShift.startedAt)} – ${formatDateDDMMYY(selectedShift.endedAt)} ${formatTime12(selectedShift.endedAt)}`;
     const startDayPart = dayPartLabel(selectedShift.startedAt);
@@ -72,6 +76,7 @@ export default async function SalesReportPage({
               [
                 { heading: `Sold (${totalSold} total)`, categories: soldCategories },
                 { heading: `Restocked (${totalRestocked} total)`, categories: restockedCategories },
+                { heading: `Deducted (${totalDeducted} total)`, categories: deductedCategories },
               ]
             )}
           />
@@ -126,10 +131,20 @@ export default async function SalesReportPage({
 
         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Restocked</h2>
         <p className="text-xs text-zinc-500 mb-3">{totalRestocked} units added this shift</p>
-        {restockedCategories.length === 0 ? (
-          <p className="text-sm text-zinc-500">No restocking recorded this shift.</p>
+        <div className="mb-8">
+          {restockedCategories.length === 0 ? (
+            <p className="text-sm text-zinc-500">No restocking recorded this shift.</p>
+          ) : (
+            <ShiftBreakdown kind="RESTOCKED" categories={restockedCategories} />
+          )}
+        </div>
+
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Deducted</h2>
+        <p className="text-xs text-zinc-500 mb-3">{totalDeducted} units deducted this shift</p>
+        {deductedCategories.length === 0 ? (
+          <p className="text-sm text-zinc-500">No stock deductions this shift.</p>
         ) : (
-          <ShiftBreakdown kind="RESTOCKED" categories={restockedCategories} />
+          <ShiftBreakdown kind="DEDUCTED" categories={deductedCategories} />
         )}
       </div>
     );
@@ -149,16 +164,19 @@ export default async function SalesReportPage({
     ({ since, until } = getWeeklyReportDateRange());
   }
 
-  const [soldRows, restockedRows, revenue] = await Promise.all([
+  const [soldRows, restockedRows, deductedRows, revenue] = await Promise.all([
     getSoldSummary(since, until),
     getRestockedSummary(since, until),
+    getDeductedSummary(since, until),
     getRevenueSummary(since, until),
   ]);
 
   const soldCategories = groupByCategory(soldRows);
   const restockedCategories = groupByCategory(restockedRows);
+  const deductedCategories = groupByCategory(deductedRows);
   const totalSold = soldRows.reduce((sum, r) => sum + r.value, 0);
   const totalRestocked = restockedRows.reduce((sum, r) => sum + r.value, 0);
+  const totalDeducted = deductedRows.reduce((sum, r) => sum + r.value, 0);
 
   // `until` is exclusive (start of the day after the range) — step back 1ms to land on the
   // actual last included day for display.
@@ -181,6 +199,7 @@ export default async function SalesReportPage({
             [
               { heading: `Sold (${totalSold} total)`, categories: soldCategories },
               { heading: `Restocked (${totalRestocked} total)`, categories: restockedCategories },
+              { heading: `Deducted (${totalDeducted} total)`, categories: deductedCategories },
             ]
           )}
         />
@@ -234,10 +253,20 @@ export default async function SalesReportPage({
 
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Restocked</h2>
       <p className="text-xs text-zinc-500 mb-3">{totalRestocked} units added in this range</p>
-      {restockedCategories.length === 0 ? (
-        <p className="text-sm text-zinc-500">No restocking recorded in this range.</p>
+      <div className="mb-8">
+        {restockedCategories.length === 0 ? (
+          <p className="text-sm text-zinc-500">No restocking recorded in this range.</p>
+        ) : (
+          <ShiftBreakdown kind="RESTOCKED" categories={restockedCategories} />
+        )}
+      </div>
+
+      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Deducted</h2>
+      <p className="text-xs text-zinc-500 mb-3">{totalDeducted} units deducted in this range</p>
+      {deductedCategories.length === 0 ? (
+        <p className="text-sm text-zinc-500">No stock deductions in this range.</p>
       ) : (
-        <ShiftBreakdown kind="RESTOCKED" categories={restockedCategories} />
+        <ShiftBreakdown kind="DEDUCTED" categories={deductedCategories} />
       )}
     </div>
   );

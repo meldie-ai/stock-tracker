@@ -151,7 +151,7 @@ export default async function ShiftDetailPage({
         )}
       </div>
 
-      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">Deductions</h2>
+      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">Deducted</h2>
       {deductions.length === 0 ? (
         <p className="text-sm text-zinc-500 mb-6">No stock deductions this shift.</p>
       ) : (

@@ -2,7 +2,7 @@ import type { ShiftTextCategory } from "@/lib/textTemplates";
 
 const LOW_STOCK_THRESHOLD = 3; // matches ProductRow's low-stock cutoff
 
-function valueColorClass(value: number, kind: "SOLD" | "RESTOCKED" | "STOCK") {
+function valueColorClass(value: number, kind: "SOLD" | "RESTOCKED" | "DEDUCTED" | "STOCK") {
   if (kind === "STOCK") {
     if (value === 0) return "text-zinc-500 dark:text-zinc-500";
     if (value <= LOW_STOCK_THRESHOLD) return "text-amber-500 dark:text-amber-300";
@@ -10,6 +10,9 @@ function valueColorClass(value: number, kind: "SOLD" | "RESTOCKED" | "STOCK") {
   }
   if (kind === "RESTOCKED") {
     return value === 0 ? "text-zinc-400 dark:text-zinc-600" : "text-purple-700 dark:text-purple-400";
+  }
+  if (kind === "DEDUCTED") {
+    return value === 0 ? "text-zinc-400 dark:text-zinc-600" : "text-red-600 dark:text-red-400";
   }
   return value === 0 ? "text-zinc-400 dark:text-zinc-600" : "text-blue-700 dark:text-blue-400";
 }
@@ -19,7 +22,7 @@ export default function ShiftBreakdown({
   kind,
 }: {
   categories: ShiftTextCategory[];
-  kind: "SOLD" | "RESTOCKED" | "STOCK";
+  kind: "SOLD" | "RESTOCKED" | "DEDUCTED" | "STOCK";
 }) {
   if (categories.length === 0) {
     return <p className="text-sm text-zinc-500">No categories yet.</p>;
