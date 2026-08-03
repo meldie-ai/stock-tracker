@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
 import { notifyStockUpdated } from "@/lib/updateSignal";
 import { formatPrice, centsToInputValue, parsePriceInput } from "@/lib/price";
+import { ADJUST_DEDUCTION_REASONS } from "@/lib/adjustReasons";
 
 const LOW_STOCK_THRESHOLD = 3; // easy to adjust; low-stock = 0 < stockCount <= this
 
@@ -42,6 +43,7 @@ export default function ProductRow({
   const [sellQty, setSellQty] = useState("1");
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustValue, setAdjustValue] = useState(String(stockCount));
+  const [adjustReason, setAdjustReason] = useState("");
   const [priceOpen, setPriceOpen] = useState(false);
   const [cashPriceValue, setCashPriceValue] = useState(centsToInputValue(cashPriceCents));
   const [cardPriceValue, setCardPriceValue] = useState(centsToInputValue(cardPriceCents));
@@ -107,13 +109,22 @@ export default function ProductRow({
       setError("Enter a whole number, 0 or more");
       return;
     }
+    const isDeduction = value < stockCount;
+    if (isDeduction && !adjustReason) {
+      setError("Select a reason for the deduction");
+      return;
+    }
     setError(null);
     startTransition(async () => {
       try {
         const res = await fetchWithTimeout(`/api/products/${productId}/adjust`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode: "set", value }),
+          body: JSON.stringify({
+            mode: "set",
+            value,
+            ...(isDeduction ? { reason: adjustReason } : {}),
+          }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -121,6 +132,7 @@ export default function ProductRow({
           return;
         }
         setAdjustOpen(false);
+        setAdjustReason("");
         notifyStockUpdated();
         router.refresh();
       } catch (err) {
@@ -279,28 +291,50 @@ export default function ProductRow({
             Adjust stock (restock/correction — not a sale)
           </button>
         ) : (
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className="text-xs text-zinc-500">Set stock to</span>
-            <input
-              type="number"
-              min={0}
-              value={adjustValue}
-              onChange={(e) => setAdjustValue(e.target.value)}
-              className="w-16 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
-            />
-            <button
-              onClick={handleAdjustSave}
-              disabled={isPending}
-              className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900"
-            >
-              Save
-            </button>
-            <button
-              onClick={() => setAdjustOpen(false)}
-              className="text-xs text-zinc-400 hover:text-zinc-600"
-            >
-              Cancel
-            </button>
+          <div className="flex flex-col gap-1.5 mt-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-zinc-500">Set stock to</span>
+              <input
+                type="number"
+                min={0}
+                value={adjustValue}
+                onChange={(e) => setAdjustValue(e.target.value)}
+                className="w-16 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
+              />
+              <button
+                onClick={handleAdjustSave}
+                disabled={isPending}
+                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setAdjustOpen(false);
+                  setAdjustReason("");
+                }}
+                className="text-xs text-zinc-400 hover:text-zinc-600"
+              >
+                Cancel
+              </button>
+            </div>
+            {adjustValue !== "" && Number(adjustValue) < stockCount && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-zinc-500">Reason</span>
+                <select
+                  value={adjustReason}
+                  onChange={(e) => setAdjustReason(e.target.value)}
+                  className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-xs"
+                >
+                  <option value="">Select a reason&hellip;</option>
+                  {ADJUST_DEDUCTION_REASONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         )}
       </div>

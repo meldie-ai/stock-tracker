@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getLastCompletedWeekRange } from "@/lib/dateFormat";
 import { hasCategoryPrice } from "@/lib/pricing";
+import { ADJUST_DEDUCTION_REASONS } from "@/lib/adjustReasons";
 import type { ShiftTextCategory } from "@/lib/textTemplates";
 
 export async function getCategoriesWithProducts() {
@@ -202,6 +203,51 @@ export async function getShiftRestockedSummary(shiftId: string) {
       value: e.quantityDelta,
     }))
   );
+}
+
+export type ShiftDeductionEntry = {
+  id: string;
+  categoryName: string;
+  productName: string;
+  quantity: number;
+  reason: string;
+  usernameSnapshot: string;
+  createdAt: Date;
+};
+
+/**
+ * Individual stock deductions (negative ADJUST entries) for a shift, listed one-by-one rather
+ * than aggregated — each carries its own reason, so summing them into one number per product
+ * (like Restocked) would lose that. Entries recorded before reasons were required (note isn't
+ * one of ADJUST_DEDUCTION_REASONS) show a fallback label instead of their old technical note.
+ */
+export async function getShiftDeductions(shiftId: string): Promise<ShiftDeductionEntry[]> {
+  const entries = await prisma.auditLog.findMany({
+    where: { shiftId, action: "ADJUST", quantityDelta: { lt: 0 } },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      quantityDelta: true,
+      note: true,
+      usernameSnapshot: true,
+      createdAt: true,
+      categoryNameSnapshot: true,
+      productNameSnapshot: true,
+      product: { select: { name: true, category: { select: { name: true } } } },
+    },
+  });
+  return entries.map((e) => ({
+    id: e.id,
+    categoryName: e.product?.category.name ?? e.categoryNameSnapshot,
+    productName: e.product?.name ?? e.productNameSnapshot,
+    quantity: -e.quantityDelta,
+    reason:
+      e.note && (ADJUST_DEDUCTION_REASONS as readonly string[]).includes(e.note)
+        ? e.note
+        : "No reason recorded (before this feature)",
+    usernameSnapshot: e.usernameSnapshot,
+    createdAt: e.createdAt,
+  }));
 }
 
 /**

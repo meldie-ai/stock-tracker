@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ADJUST_DEDUCTION_REASONS } from "@/lib/adjustReasons";
 
 export const loginSchema = z.object({
   username: z.string().trim().min(1).max(100),
@@ -13,6 +14,7 @@ export const sellSchema = z.object({
 export const adjustSchema = z.object({
   mode: z.enum(["set", "delta"]),
   value: z.number().int().max(1_000_000),
+  reason: z.enum(ADJUST_DEDUCTION_REASONS).optional(),
 });
 
 export const createCategorySchema = z.object({

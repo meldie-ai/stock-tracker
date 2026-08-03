@@ -18,7 +18,7 @@ export async function POST(
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid value" }, { status: 400 });
   }
-  const { mode, value } = parsed.data;
+  const { mode, value, reason } = parsed.data;
 
   const activeShift = await prisma.shift.findFirst({
     where: { status: "ACTIVE" },
@@ -38,6 +38,8 @@ export async function POST(
 
       const nextStock = mode === "set" ? value : product.stockCount + value;
       if (nextStock < 0) throw new Error("NEGATIVE");
+      const quantityDelta = nextStock - product.stockCount;
+      if (quantityDelta < 0 && !reason) throw new Error("REASON_REQUIRED");
 
       const updated = await tx.product.update({
         where: { id: productId },
@@ -55,7 +57,7 @@ export async function POST(
         stockBefore: product.stockCount,
         stockAfter: updated.stockCount,
         shiftId: activeShift.id,
-        note: `mode=${mode} value=${value}`,
+        note: quantityDelta < 0 ? reason! : null,
       });
 
       let finalStockCount = updated.stockCount;
@@ -100,6 +102,12 @@ export async function POST(
     if (err instanceof Error && err.message === "NEGATIVE") {
       return NextResponse.json(
         { error: "Stock count cannot go below 0" },
+        { status: 400 }
+      );
+    }
+    if (err instanceof Error && err.message === "REASON_REQUIRED") {
+      return NextResponse.json(
+        { error: "Select a reason for the deduction" },
         { status: 400 }
       );
     }
