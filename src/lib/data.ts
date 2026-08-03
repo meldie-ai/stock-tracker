@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getLastCompletedWeekRange } from "@/lib/dateFormat";
-import { hasCategoryPrice } from "@/lib/pricing";
+import { hasCategoryPrice, resolveUnitPriceCents } from "@/lib/pricing";
 import { ADJUST_DEDUCTION_REASONS } from "@/lib/adjustReasons";
 import type { ShiftTextCategory } from "@/lib/textTemplates";
 
@@ -165,6 +165,31 @@ export async function getSoldSummary(since: Date, until: Date) {
   );
 }
 
+/**
+ * Total units sold within an arbitrary, exact instant-to-instant range (not day-aligned).
+ * getSoldSummary can't do this — it joins through ShiftSale, which only has a shift's
+ * startedAt to filter by, not a per-sale timestamp. Reads AuditLog SELL entries directly
+ * instead, since each one carries its own exact createdAt.
+ */
+export async function getSoldSummaryForTimeRange(since: Date, until: Date) {
+  const entries = await prisma.auditLog.findMany({
+    where: { action: "SELL", createdAt: { gte: since, lt: until } },
+    select: {
+      categoryNameSnapshot: true,
+      productNameSnapshot: true,
+      quantityDelta: true,
+      product: { select: { name: true, category: { select: { name: true } } } },
+    },
+  });
+  return aggregateByProduct(
+    entries.map((e) => ({
+      categoryNameSnapshot: e.product?.category.name ?? e.categoryNameSnapshot,
+      productNameSnapshot: e.product?.name ?? e.productNameSnapshot,
+      value: -e.quantityDelta,
+    }))
+  );
+}
+
 /** Total units restocked (positive Adjust-stock corrections) per product within an arbitrary date range. */
 export async function getRestockedSummary(since: Date, until: Date) {
   const entries = await prisma.auditLog.findMany({
@@ -267,6 +292,49 @@ export async function getRevenueSummary(since: Date, until: Date) {
 
   const cashRevenueCents = sums.find((s) => s.paymentMethod === "CASH")?._sum.revenueCentsCollected ?? 0;
   const cardRevenueCents = sums.find((s) => s.paymentMethod === "CARD")?._sum.revenueCentsCollected ?? 0;
+
+  return { cashRevenueCents, cardRevenueCents, totalRevenueCents: cashRevenueCents + cardRevenueCents };
+}
+
+/**
+ * Cash/card revenue for an arbitrary, exact instant-to-instant range (not day-aligned). Unlike
+ * getRevenueSummary — which reads ShiftSale.revenueCentsCollected, an amount locked in at the
+ * moment of sale — this has no per-sale-timestamp table to slice by, so it recomputes each
+ * sale's amount from the product's *current* cash/card price instead. If a price changed since
+ * some of these sales, the total will drift slightly from what was actually charged at the
+ * time; accepted for this narrower, ad-hoc time-slice view. Deal sales are skipped entirely —
+ * a bundle's per-unit share of the price isn't reconstructable from the current price alone —
+ * so "Sold" units from deals won't have matching revenue here.
+ */
+export async function getRevenueSummaryForTimeRange(since: Date, until: Date) {
+  const entries = await prisma.auditLog.findMany({
+    where: { action: "SELL", createdAt: { gte: since, lt: until } },
+    select: {
+      quantityDelta: true,
+      note: true,
+      product: {
+        select: {
+          cashPriceCents: true,
+          cardPriceCents: true,
+          category: { select: { cashPriceCents: true, cardPriceCents: true } },
+        },
+      },
+    },
+  });
+
+  let cashRevenueCents = 0;
+  let cardRevenueCents = 0;
+  for (const e of entries) {
+    if (!e.product) continue; // Product since deleted — its price can't be resolved anymore.
+    const units = -e.quantityDelta;
+    if (e.note === "Cash sale") {
+      const unitPriceCents = resolveUnitPriceCents(e.product, e.product.category, "CASH");
+      cashRevenueCents += (unitPriceCents ?? 0) * units;
+    } else if (e.note === "Card sale") {
+      const unitPriceCents = resolveUnitPriceCents(e.product, e.product.category, "CARD");
+      cardRevenueCents += (unitPriceCents ?? 0) * units;
+    }
+  }
 
   return { cashRevenueCents, cardRevenueCents, totalRevenueCents: cashRevenueCents + cardRevenueCents };
 }

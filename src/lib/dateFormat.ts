@@ -68,11 +68,21 @@ const ISO_WEEKDAY: Record<string, number> = {
   Sunday: 7,
 };
 
+// Shop-local instant expressed as the equivalent UTC instant. Safe as a fixed offset
+// year-round since Queensland doesn't observe daylight saving.
+const SHOP_UTC_OFFSET_HOURS = 10;
+function shopLocalInstantUtc(
+  year: number,
+  month: number,
+  day: number,
+  hour = 0,
+  minute = 0
+): Date {
+  return new Date(Date.UTC(year, month - 1, day, hour, minute) - SHOP_UTC_OFFSET_HOURS * 60 * 60 * 1000);
+}
+
 function shopLocalMidnightUtc(year: number, month: number, day: number): Date {
-  // Shop-local midnight expressed as the equivalent UTC instant. Safe as a fixed
-  // offset year-round since Queensland doesn't observe daylight saving.
-  const SHOP_UTC_OFFSET_HOURS = 10;
-  return new Date(Date.UTC(year, month - 1, day) - SHOP_UTC_OFFSET_HOURS * 60 * 60 * 1000);
+  return shopLocalInstantUtc(year, month, day);
 }
 
 /**
@@ -115,6 +125,21 @@ export function parseShopLocalDateInput(value: string): Date | null {
 export function shopLocalStartOfNextDay(date: Date): Date {
   const { year, month, day } = getShopLocalParts(date);
   return new Date(shopLocalMidnightUtc(year, month, day).getTime() + 24 * 60 * 60 * 1000);
+}
+
+/** e.g. "2026-07-24T14:30" — the format native <input type="datetime-local"> elements use. */
+export function formatDateTimeInputValue(date: Date): string {
+  const { year, month, day, hour, minute } = getShopLocalParts(date);
+  return `${year}-${pad2(month)}-${pad2(day)}T${pad2(hour)}:${pad2(minute)}`;
+}
+
+/** Parses a datetime-local input value ("YYYY-MM-DDTHH:mm") as an exact shop-local instant. Null if malformed. */
+export function parseShopLocalDateTimeInput(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return null;
+  const [, y, mo, d, h, mi] = match;
+  const date = shopLocalInstantUtc(Number(y), Number(mo), Number(d), Number(h), Number(mi));
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 /** e.g. "08:00AM" */
