@@ -162,7 +162,7 @@ export default async function ShiftDetailPage({
               className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 text-sm"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="font-medium text-zinc-900 dark:text-zinc-50">{d.productName}</span>
+                <span className="font-medium text-red-600 dark:text-red-400">{d.productName}</span>
                 <span className="font-semibold text-red-600 dark:text-red-400 tabular-nums">
                   &minus;{d.quantity}
                 </span>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
 import { sellSchema } from "@/lib/validation";
-import { tryCascadeSinglesFromCarton } from "@/lib/cartonCascade";
+import { ensureSinglesStockForSale, tryCascadeSinglesFromCarton } from "@/lib/cartonCascade";
 import { recordAuditEntry } from "@/lib/auditLog";
 import { resolveUnitPriceCents } from "@/lib/pricing";
 
@@ -35,7 +35,18 @@ export async function POST(
         include: { category: true },
       });
       if (!product) throw new Error("NOT_FOUND");
-      if (product.stockCount < quantity) throw new Error("INSUFFICIENT_STOCK");
+
+      const ensured = await ensureSinglesStockForSale(tx, {
+        productId: product.id,
+        productName: product.name,
+        linkedCartonProductId: product.linkedCartonProductId,
+        currentStockCount: product.stockCount,
+        quantityNeeded: quantity,
+        userId: auth.user.userId,
+        usernameSnapshot: auth.user.username,
+        shiftId: activeShift.id,
+      });
+      if (!ensured.ok) throw new Error("INSUFFICIENT_STOCK");
 
       const updatedProduct = await tx.product.update({
         where: { id: productId },
@@ -50,7 +61,7 @@ export async function POST(
         productNameSnapshot: product.name,
         categoryNameSnapshot: product.category.name,
         quantityDelta: -quantity,
-        stockBefore: product.stockCount,
+        stockBefore: ensured.stockBefore,
         stockAfter: updatedProduct.stockCount,
         shiftId: activeShift.id,
         note: paymentMethod === "CASH" ? "Cash sale" : "Card sale",

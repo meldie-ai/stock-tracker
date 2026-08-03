@@ -185,30 +185,6 @@ export async function getRestockedSummary(since: Date, until: Date) {
   );
 }
 
-/**
- * Total units deducted (negative Adjust-stock corrections) per product within an arbitrary date
- * range — aggregated like getRestockedSummary, so individual reasons aren't shown here; see
- * getShiftDeductions for the per-event, per-reason list on a single shift's detail page.
- */
-export async function getDeductedSummary(since: Date, until: Date) {
-  const entries = await prisma.auditLog.findMany({
-    where: { action: "ADJUST", quantityDelta: { lt: 0 }, createdAt: { gte: since, lt: until } },
-    select: {
-      categoryNameSnapshot: true,
-      productNameSnapshot: true,
-      quantityDelta: true,
-      product: { select: { name: true, category: { select: { name: true } } } },
-    },
-  });
-  return aggregateByProduct(
-    entries.map((e) => ({
-      categoryNameSnapshot: e.product?.category.name ?? e.categoryNameSnapshot,
-      productNameSnapshot: e.product?.name ?? e.productNameSnapshot,
-      value: -e.quantityDelta,
-    }))
-  );
-}
-
 /** Total units restocked during one specific shift (same rule as getRestockedSummary, scoped by shiftId instead of a date range). */
 export async function getShiftRestockedSummary(shiftId: string) {
   const entries = await prisma.auditLog.findMany({
@@ -272,26 +248,6 @@ export async function getShiftDeductions(shiftId: string): Promise<ShiftDeductio
     usernameSnapshot: e.usernameSnapshot,
     createdAt: e.createdAt,
   }));
-}
-
-/** Total units deducted during one specific shift, aggregated per product (for the Sales Report's shift view — see getShiftDeductions for the per-event list). */
-export async function getShiftDeductedSummary(shiftId: string) {
-  const entries = await prisma.auditLog.findMany({
-    where: { shiftId, action: "ADJUST", quantityDelta: { lt: 0 } },
-    select: {
-      categoryNameSnapshot: true,
-      productNameSnapshot: true,
-      quantityDelta: true,
-      product: { select: { name: true, category: { select: { name: true } } } },
-    },
-  });
-  return aggregateByProduct(
-    entries.map((e) => ({
-      categoryNameSnapshot: e.product?.category.name ?? e.categoryNameSnapshot,
-      productNameSnapshot: e.product?.name ?? e.productNameSnapshot,
-      value: -e.quantityDelta,
-    }))
-  );
 }
 
 /**
