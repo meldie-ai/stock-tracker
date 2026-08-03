@@ -28,7 +28,7 @@ export default async function AuditPage() {
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="font-medium text-zinc-900 dark:text-zinc-50">
-                  {entry.productNameSnapshot}
+                  {entry.categoryNameSnapshot} &middot; {entry.productNameSnapshot}
                 </span>
                 <span className="text-xs text-zinc-500 tabular-nums">
                   {formatDateDDMMYY(entry.createdAt)} {formatTime12(entry.createdAt)}
