@@ -288,7 +288,7 @@ export default function ProductRow({
             }}
             className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
           >
-            Adjust stock (restock/correction — not a sale)
+            Adjust stock (restock/correction)
           </button>
         ) : (
           <div className="flex flex-col gap-1.5 mt-1">
