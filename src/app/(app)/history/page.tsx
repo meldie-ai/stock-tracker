@@ -43,7 +43,9 @@ export default async function HistoryPage() {
                   {shift.endedAt &&
                     `${formatDateDDMMYY(shift.endedAt)} ${formatTime12(shift.endedAt)}`}
                 </p>
-                <p className="text-xs text-zinc-500">{dayPartLabel(shift.startedAt)}</p>
+                <p className="text-xs font-bold uppercase text-zinc-700 dark:text-zinc-300">
+                  {dayPartLabel(shift.startedAt)}
+                </p>
                 <p className="text-xs text-zinc-500 mt-1">
                   View sold &amp; stock breakdown
                   {revenue && (
