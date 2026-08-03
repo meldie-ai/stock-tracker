@@ -103,6 +103,27 @@ export default function ProductRow({
     setSellQty("1");
   }
 
+  function handleUndoLastSale() {
+    if (!confirm("Undo the last sale of this product?")) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        const res = await fetchWithTimeout(`/api/products/${productId}/undo-last-sale`, {
+          method: "POST",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(data.error ?? "Failed to undo sale");
+          return;
+        }
+        notifyStockUpdated();
+        router.refresh();
+      } catch (err) {
+        setError(describeFetchError(err));
+      }
+    });
+  }
+
   function handleAdjustSave() {
     const value = Number(adjustValue);
     if (!Number.isInteger(value) || value < 0) {
@@ -276,6 +297,18 @@ export default function ProductRow({
               + Deal
             </button>
           )}
+        </div>
+      )}
+
+      {hasActiveShift && (soldCount ?? 0) > 0 && (
+        <div className="mt-1">
+          <button
+            onClick={handleUndoLastSale}
+            disabled={isPending}
+            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50"
+          >
+            Undo last sale
+          </button>
         </div>
       )}
 

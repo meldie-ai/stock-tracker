@@ -122,6 +122,7 @@ enum AuditAction {
   ADJUST
   CASCADE
   PRICE_CHANGE
+  UNDO_SALE
 }
 
 enum PaymentMethod {
