@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getLastCompletedWeekRange } from "@/lib/dateFormat";
+import { hasCategoryPrice } from "@/lib/pricing";
 import type { ShiftTextCategory } from "@/lib/textTemplates";
 
 export async function getCategoriesWithProducts() {
@@ -19,7 +20,11 @@ export async function getLastStockUpdateTime(): Promise<Date | null> {
 export async function getActiveShift() {
   return prisma.shift.findFirst({
     where: { status: "ACTIVE" },
-    include: { sales: true, startedByUser: { select: { username: true } } },
+    include: {
+      sales: true,
+      startedByUser: { select: { username: true } },
+      notes: { orderBy: { createdAt: "asc" } },
+    },
   });
 }
 
@@ -67,6 +72,7 @@ export async function getShiftDetail(shiftId: string) {
       stockSnapshots: {
         orderBy: [{ categorySortOrder: "asc" }, { productNameSnapshot: "asc" }],
       },
+      notes: { orderBy: { createdAt: "asc" } },
       startedByUser: { select: { username: true } },
       endedByUser: { select: { username: true } },
     },
@@ -178,6 +184,26 @@ export async function getRestockedSummary(since: Date, until: Date) {
   );
 }
 
+/** Total units restocked during one specific shift (same rule as getRestockedSummary, scoped by shiftId instead of a date range). */
+export async function getShiftRestockedSummary(shiftId: string) {
+  const entries = await prisma.auditLog.findMany({
+    where: { shiftId, action: "ADJUST", quantityDelta: { gt: 0 } },
+    select: {
+      categoryNameSnapshot: true,
+      productNameSnapshot: true,
+      quantityDelta: true,
+      product: { select: { name: true, category: { select: { name: true } } } },
+    },
+  });
+  return aggregateByProduct(
+    entries.map((e) => ({
+      categoryNameSnapshot: e.product?.category.name ?? e.categoryNameSnapshot,
+      productNameSnapshot: e.product?.name ?? e.productNameSnapshot,
+      value: e.quantityDelta,
+    }))
+  );
+}
+
 /**
  * Cash/card revenue for a date range. Sums the amount actually collected at the moment of
  * each sale (revenueCentsCollected), locked in at sale time by the sell/deal-sell routes —
@@ -199,6 +225,44 @@ export async function getRevenueSummary(since: Date, until: Date) {
   return { cashRevenueCents, cardRevenueCents, totalRevenueCents: cashRevenueCents + cardRevenueCents };
 }
 
+/** Cash/card revenue for one specific shift (same rule as getRevenueSummary, scoped by shiftId). Admin-only display. */
+export async function getShiftRevenueSummary(shiftId: string) {
+  const sums = await prisma.shiftSale.groupBy({
+    by: ["paymentMethod"],
+    where: { shiftId, paymentMethod: { not: null } },
+    _sum: { revenueCentsCollected: true },
+  });
+
+  const cashRevenueCents = sums.find((s) => s.paymentMethod === "CASH")?._sum.revenueCentsCollected ?? 0;
+  const cardRevenueCents = sums.find((s) => s.paymentMethod === "CARD")?._sum.revenueCentsCollected ?? 0;
+
+  return { cashRevenueCents, cardRevenueCents, totalRevenueCents: cashRevenueCents + cardRevenueCents };
+}
+
+/** Revenue totals for several shifts at once (e.g. every shift on the History list), one grouped query instead of N. Admin-only display. */
+export async function getShiftsRevenueTotals(
+  shiftIds: string[]
+): Promise<Map<string, { cashRevenueCents: number; cardRevenueCents: number; totalRevenueCents: number }>> {
+  const sums = await prisma.shiftSale.groupBy({
+    by: ["shiftId", "paymentMethod"],
+    where: { shiftId: { in: shiftIds }, paymentMethod: { not: null } },
+    _sum: { revenueCentsCollected: true },
+  });
+
+  const totals = new Map<string, { cashRevenueCents: number; cardRevenueCents: number; totalRevenueCents: number }>();
+  for (const shiftId of shiftIds) {
+    totals.set(shiftId, { cashRevenueCents: 0, cardRevenueCents: 0, totalRevenueCents: 0 });
+  }
+  for (const row of sums) {
+    const entry = totals.get(row.shiftId)!;
+    const cents = row._sum.revenueCentsCollected ?? 0;
+    if (row.paymentMethod === "CASH") entry.cashRevenueCents = cents;
+    else if (row.paymentMethod === "CARD") entry.cardRevenueCents = cents;
+    entry.totalRevenueCents = entry.cashRevenueCents + entry.cardRevenueCents;
+  }
+  return totals;
+}
+
 /** Groups flat (category, product, value) rows back into categories, preserving DB order. */
 export function groupByCategory(
   rows: { categoryNameSnapshot: string; productNameSnapshot: string; value: number }[]
@@ -217,4 +281,52 @@ export function groupByCategory(
   }
 
   return categories;
+}
+
+export type PaymentBreakdownRow = { label: string; cash: number; card: number; deal: number };
+
+/**
+ * Unit-count breakdown of a shift's sales by how they were paid (cash / card / deal), read
+ * from AuditLog SELL entries' `note` field (set by the sell/deal-sell routes — see those files).
+ * Grouped by category when the category has its own price (every product in it sells at the
+ * same price, e.g. VAPES), or by individual product otherwise (e.g. CARTONS, SINGLES), matching
+ * the same category-overrides-product rule used everywhere else pricing is resolved.
+ * Entries recorded before this tagging existed have no note and are skipped — there's no way to
+ * recover which payment method they used after the fact.
+ */
+export async function getShiftPaymentBreakdown(shiftId: string): Promise<PaymentBreakdownRow[]> {
+  const entries = await prisma.auditLog.findMany({
+    where: { shiftId, action: "SELL" },
+    select: {
+      quantityDelta: true,
+      note: true,
+      productNameSnapshot: true,
+      categoryNameSnapshot: true,
+      product: {
+        select: {
+          name: true,
+          category: { select: { name: true, cashPriceCents: true, cardPriceCents: true } },
+        },
+      },
+    },
+  });
+
+  const byKey = new Map<string, PaymentBreakdownRow>();
+  for (const e of entries) {
+    // Entries recorded before payment-method tagging existed have no note — nothing to
+    // attribute them to, so skip rather than inserting a meaningless all-zero row.
+    if (e.note !== "Cash sale" && e.note !== "Card sale" && e.note !== "Deal sale") continue;
+
+    const units = -e.quantityDelta;
+    const categoryName = e.product?.category.name ?? e.categoryNameSnapshot;
+    const productName = e.product?.name ?? e.productNameSnapshot;
+    const grouped = e.product ? hasCategoryPrice(e.product.category) : false;
+    const key = grouped ? categoryName : `${categoryName} — ${productName}`;
+    const row = byKey.get(key) ?? { label: key, cash: 0, card: 0, deal: 0 };
+    if (e.note === "Cash sale") row.cash += units;
+    else if (e.note === "Card sale") row.card += units;
+    else row.deal += units;
+    byKey.set(key, row);
+  }
+  return Array.from(byKey.values()).sort((a, b) => a.label.localeCompare(b.label));
 }

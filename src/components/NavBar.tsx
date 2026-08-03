@@ -12,12 +12,12 @@ const links = [
   { href: "/stock-count", label: "Stock Count" },
   { href: "/products-sold", label: "Products Sold" },
   { href: "/manage", label: "Manage" },
-  { href: "/history", label: "History" },
+  { href: "/history", label: "Shift History" },
+  { href: "/audit", label: "Audit Log" },
 ];
 
 const adminLinks = [
   { href: "/admin/staff", label: "Staff" },
-  { href: "/admin/audit", label: "Audit Log" },
   { href: "/admin/reports", label: "Sales Report" },
 ];
 

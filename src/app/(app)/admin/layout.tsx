@@ -12,14 +12,23 @@ export default async function AdminLayout({
 
   return (
     <div>
-      <nav className="flex gap-4 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-3">
-        <Link href="/admin/staff" className="text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-50">
+      <nav className="flex flex-wrap gap-2 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-3">
+        <Link
+          href="/admin/staff"
+          className="touch-manipulation rounded-md px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 active:bg-black/10 hover:bg-black/5 dark:active:bg-zinc-800 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-50"
+        >
           Staff
         </Link>
-        <Link href="/admin/audit" className="text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-50">
+        <Link
+          href="/audit"
+          className="touch-manipulation rounded-md px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 active:bg-black/10 hover:bg-black/5 dark:active:bg-zinc-800 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-50"
+        >
           Audit Log
         </Link>
-        <Link href="/admin/reports" className="text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-50">
+        <Link
+          href="/admin/reports"
+          className="touch-manipulation rounded-md px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 active:bg-black/10 hover:bg-black/5 dark:active:bg-zinc-800 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-50"
+        >
           Sales Report
         </Link>
       </nav>

@@ -54,6 +54,10 @@ export const priceSchema = z.object({
   dealPriceCents: z.number().int().min(0).max(1_000_000).nullable().optional(),
 });
 
+export const shiftNoteSchema = z.object({
+  text: z.string().trim().min(1).max(500),
+});
+
 export const dealSellSchema = z.object({
   items: z
     .array(

@@ -1,6 +1,15 @@
 import { notFound } from "next/navigation";
-import { getShiftDetail, groupByCategory, sumDuplicateProductRows } from "@/lib/data";
+import {
+  getShiftDetail,
+  getShiftPaymentBreakdown,
+  getShiftRestockedSummary,
+  getShiftRevenueSummary,
+  groupByCategory,
+  sumDuplicateProductRows,
+} from "@/lib/data";
 import { dayPartLabel, formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
+import { formatPrice } from "@/lib/price";
+import { getCurrentUser } from "@/lib/session";
 import { buildShiftReportCopyText } from "@/lib/shiftCopyText";
 import ShiftBreakdown from "@/components/ShiftBreakdown";
 import CopyButton from "@/components/CopyButton";
@@ -11,10 +20,11 @@ export default async function ShiftDetailPage({
   params: Promise<{ shiftId: string }>;
 }) {
   const { shiftId } = await params;
-  const shift = await getShiftDetail(shiftId);
+  const [shift, currentUser] = await Promise.all([getShiftDetail(shiftId), getCurrentUser()]);
   if (!shift || shift.status !== "CLOSED" || !shift.endedAt) {
     notFound();
   }
+  const isAdmin = currentUser?.role === "ADMIN";
 
   const soldCategories = groupByCategory(
     // A product can have separate cash/card rows for the same shift now — sum them back
@@ -34,6 +44,11 @@ export default async function ShiftDetailPage({
       value: s.stockCountAtClose,
     }))
   );
+  const restockedCategories = groupByCategory(await getShiftRestockedSummary(shift.id));
+
+  const [revenue, paymentBreakdown] = isAdmin
+    ? await Promise.all([getShiftRevenueSummary(shift.id), getShiftPaymentBreakdown(shift.id)])
+    : [null, null];
 
   const dateRangeLabel = `${formatDateDDMMYY(shift.startedAt)} ${formatTime12(shift.startedAt)} – ${formatDateDDMMYY(shift.endedAt)} ${formatTime12(shift.endedAt)}`;
   const startDayPart = dayPartLabel(shift.startedAt);
@@ -54,6 +69,7 @@ export default async function ShiftDetailPage({
             ],
             [
               { heading: "Products Sold", categories: soldCategories },
+              { heading: "Restocked", categories: restockedCategories },
               { heading: "Stock Count", categories: stockCategories },
             ]
           )}
@@ -72,17 +88,92 @@ export default async function ShiftDetailPage({
         )}
       </p>
 
+      {isAdmin && revenue && (
+        <>
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
+            Money made
+          </h2>
+          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-6">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              <p>
+                Cash:{" "}
+                <span className="font-semibold text-red-600 dark:text-red-400">
+                  {formatPrice(revenue.cashRevenueCents)}
+                </span>
+              </p>
+              <p>
+                Card:{" "}
+                <span className="font-semibold text-red-600 dark:text-red-400">
+                  {formatPrice(revenue.cardRevenueCents)}
+                </span>
+              </p>
+              <p>
+                Total:{" "}
+                <span className="font-semibold text-zinc-900 dark:text-zinc-50">
+                  {formatPrice(revenue.totalRevenueCents)}
+                </span>
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">
         Products Sold
       </h2>
-      <div className="mb-6">
+      <div className={isAdmin ? "mb-3" : "mb-6"}>
         <ShiftBreakdown kind="SOLD" categories={soldCategories} />
+      </div>
+      {isAdmin && paymentBreakdown && paymentBreakdown.length > 0 && (
+        <details className="mb-6 rounded-lg border border-zinc-200 dark:border-zinc-800 p-3">
+          <summary className="cursor-pointer text-sm font-medium text-zinc-600 dark:text-zinc-400">
+            See detailed breakdown
+          </summary>
+          <div className="mt-2 flex flex-col gap-1 text-sm">
+            {paymentBreakdown.map((row) => (
+              <p key={row.label} className="text-zinc-700 dark:text-zinc-300">
+                <span className="font-medium text-zinc-900 dark:text-zinc-50">{row.label}</span>
+                {" — "}Cash: {row.cash}, Card: {row.card}, Deal: {row.deal}
+              </p>
+            ))}
+          </div>
+        </details>
+      )}
+
+      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">Restocked</h2>
+      <div className="mb-6">
+        {restockedCategories.length === 0 ? (
+          <p className="text-sm text-zinc-500">No restocking recorded this shift.</p>
+        ) : (
+          <ShiftBreakdown kind="SOLD" categories={restockedCategories} />
+        )}
       </div>
 
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">
         Stock Count
       </h2>
-      <ShiftBreakdown kind="STOCK" categories={stockCategories} />
+      <div className="mb-6">
+        <ShiftBreakdown kind="STOCK" categories={stockCategories} />
+      </div>
+
+      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">Notes</h2>
+      {shift.notes.length === 0 ? (
+        <p className="text-sm text-zinc-500">No notes for this shift.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {shift.notes.map((note) => (
+            <div
+              key={note.id}
+              className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 text-sm"
+            >
+              <p className="text-zinc-900 dark:text-zinc-50">{note.text}</p>
+              <p className="text-xs text-zinc-500 mt-1">
+                {note.usernameSnapshot} · {formatDateDDMMYY(note.createdAt)} {formatTime12(note.createdAt)}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

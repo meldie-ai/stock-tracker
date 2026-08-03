@@ -244,7 +244,7 @@ export default function ProductRow({
           <button
             onClick={() => handleSell("CASH")}
             disabled={isPending}
-            className="rounded-md bg-blue-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md bg-green-600 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
           >
             Cash
           </button>

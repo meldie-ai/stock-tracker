@@ -35,6 +35,7 @@ model User {
 
   loginAttempts LoginAttempt[]
   auditLogs     AuditLog[]
+  shiftNotes    ShiftNote[]
 }
 
 model LoginAttempt {
@@ -173,6 +174,7 @@ model Shift {
 
   sales          ShiftSale[]
   stockSnapshots ShiftStockSnapshot[]
+  notes          ShiftNote[]
 
   @@index([status])
   @@index([endedAt])
@@ -215,5 +217,21 @@ model ShiftStockSnapshot {
   stockCountAtClose    Int
 
   @@unique([shiftId, productId])
+  @@index([shiftId])
+}
+
+// A running, append-only log any staff member can add to while a shift is active — e.g.
+// handover context, stock issues, till discrepancies. Not editable once written; carried
+// into the shift's permanent History record after it closes.
+model ShiftNote {
+  id               String   @id @default(cuid())
+  shiftId          String
+  shift            Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  usernameSnapshot String
+  text             String
+  createdAt        DateTime @default(now())
+
   @@index([shiftId])
 }

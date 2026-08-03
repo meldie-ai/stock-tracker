@@ -53,6 +53,7 @@ export async function POST(
         stockBefore: product.stockCount,
         stockAfter: updatedProduct.stockCount,
         shiftId: activeShift.id,
+        note: paymentMethod === "CASH" ? "Cash sale" : "Card sale",
       });
 
       let finalStockCount = updatedProduct.stockCount;

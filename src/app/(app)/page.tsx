@@ -16,12 +16,20 @@ export default async function DashboardPage() {
     ? `${formatDateDDMMYY(activeShift.startedAt)} ${formatTime12(activeShift.startedAt)}`
     : null;
 
+  const notes = (activeShift?.notes ?? []).map((note) => ({
+    id: note.id,
+    text: note.text,
+    usernameSnapshot: note.usernameSnapshot,
+    createdAtLabel: `${formatDateDDMMYY(note.createdAt)} ${formatTime12(note.createdAt)}`,
+  }));
+
   return (
     <div>
       <ShiftControls
         hasActiveShift={!!activeShift}
         startedAtLabel={startedAtLabel}
         startedByUsername={activeShift?.startedByUser.username ?? null}
+        notes={notes}
       />
 
       {categories.length === 0 ? (

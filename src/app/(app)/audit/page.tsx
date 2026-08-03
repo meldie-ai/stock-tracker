@@ -2,7 +2,7 @@ import { getAuditLog } from "@/lib/data";
 import { formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
 import { AUDIT_LOG_RETENTION_DAYS } from "@/lib/retention";
 
-export default async function AdminAuditPage() {
+export default async function AuditPage() {
   const entries = await getAuditLog({});
 
   return (
