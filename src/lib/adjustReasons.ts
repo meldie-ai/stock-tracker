@@ -1,7 +1,7 @@
 export const ADJUST_DEDUCTION_REASONS = [
   "Damaged",
   "Miscount / correction",
-  "Given away or comp",
+  "Staff freebie",
   "Expired",
   "Theft or loss",
   "Other",
