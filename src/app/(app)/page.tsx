@@ -2,7 +2,7 @@ import { getActiveShift, getCategoriesWithProducts, sumSoldByProductId } from "@
 import { formatTime12, formatDateDDMMYY } from "@/lib/dateFormat";
 import ShiftControls from "@/components/ShiftControls";
 import CategorySection from "@/components/CategorySection";
-import DashboardCategoryTabs from "@/components/DashboardCategoryTabs";
+import TabSwitcher from "@/components/TabSwitcher";
 
 export default async function DashboardPage() {
   const [categories, activeShift] = await Promise.all([
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
           No categories yet. Head to Manage to add your first category and products.
         </p>
       ) : (
-        <DashboardCategoryTabs
+        <TabSwitcher
           tabs={categories.map((c) => ({ id: c.id, label: c.name.split("\n")[0] }))}
         >
           {categories.map((category) => (
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
               hasActiveShift={!!activeShift}
             />
           ))}
-        </DashboardCategoryTabs>
+        </TabSwitcher>
       )}
     </div>
   );

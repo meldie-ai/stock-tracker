@@ -26,6 +26,7 @@ import { SHIFT_RETENTION_DAYS, getShiftRetentionCutoff } from "@/lib/retention";
 import { buildShiftReportCopyText } from "@/lib/shiftCopyText";
 import ShiftBreakdown from "@/components/ShiftBreakdown";
 import CopyButton from "@/components/CopyButton";
+import TabSwitcher from "@/components/TabSwitcher";
 
 export default async function SalesReportPage({
   searchParams,
@@ -355,86 +356,98 @@ function reportFilters(
   fromValue?: string,
   toValue?: string
 ) {
+  const activeTab = params.shift ? "shift" : params.fromTime && params.toTime ? "time" : "date";
+
   return (
-    <div className="flex flex-col gap-2 mt-3 mb-4">
-      <form method="get" className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
-          From
-          <input
-            type="date"
-            name="from"
-            defaultValue={fromValue}
-            className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
-          To
-          <input
-            type="date"
-            name="to"
-            defaultValue={toValue}
-            className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm"
-          />
-        </label>
-        <button
-          type="submit"
-          className="rounded-md bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 px-3 py-1.5 text-sm font-medium"
-        >
-          View range
-        </button>
-      </form>
-
-      <form method="get" className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
-          Or view an exact time range
-          <input
-            type="datetime-local"
-            name="fromTime"
-            defaultValue={params.fromTime}
-            className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
-          To
-          <input
-            type="datetime-local"
-            name="toTime"
-            defaultValue={params.toTime}
-            className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm"
-          />
-        </label>
-        <button
-          type="submit"
-          className="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900"
-        >
-          View time range
-        </button>
-      </form>
-
-      <form method="get" className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
-          Or view a specific shift
-          <select
-            name="shift"
-            defaultValue={params.shift ?? ""}
-            className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm max-w-[16rem]"
+    <div className="mt-3 mb-4">
+      <TabSwitcher
+        pillStyle
+        defaultTabId={activeTab}
+        tabs={[
+          { id: "date", label: "Date range" },
+          { id: "time", label: "Time range" },
+          { id: "shift", label: "Shift" },
+        ]}
+      >
+        <form method="get" className="flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            From
+            <input
+              type="date"
+              name="from"
+              defaultValue={fromValue}
+              className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            To
+            <input
+              type="date"
+              name="to"
+              defaultValue={toValue}
+              className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm"
+            />
+          </label>
+          <button
+            type="submit"
+            className="rounded-md bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 px-3 py-1.5 text-sm font-medium"
           >
-            <option value="">Select a shift&hellip;</option>
-            {shifts.map((shift) => (
-              <option key={shift.id} value={shift.id}>
-                {formatDateDDMMYY(shift.startedAt)} {formatTime12(shift.startedAt)}
-                {shift.endedAt ? ` – ${formatTime12(shift.endedAt)}` : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="submit"
-          className="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900"
-        >
-          View shift
-        </button>
-      </form>
+            View range
+          </button>
+        </form>
+
+        <form method="get" className="flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            From
+            <input
+              type="datetime-local"
+              name="fromTime"
+              defaultValue={params.fromTime}
+              className="w-[11.5rem] rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            To
+            <input
+              type="datetime-local"
+              name="toTime"
+              defaultValue={params.toTime}
+              className="w-[11.5rem] rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm"
+            />
+          </label>
+          <button
+            type="submit"
+            className="rounded-md bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 px-3 py-1.5 text-sm font-medium"
+          >
+            View time range
+          </button>
+        </form>
+
+        <form method="get" className="flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            Shift
+            <select
+              name="shift"
+              defaultValue={params.shift ?? ""}
+              className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm max-w-[16rem]"
+            >
+              <option value="">Select a shift&hellip;</option>
+              {shifts.map((shift) => (
+                <option key={shift.id} value={shift.id}>
+                  {formatDateDDMMYY(shift.startedAt)} {formatTime12(shift.startedAt)}
+                  {shift.endedAt ? ` – ${formatTime12(shift.endedAt)}` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="submit"
+            className="rounded-md bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 px-3 py-1.5 text-sm font-medium"
+          >
+            View shift
+          </button>
+        </form>
+      </TabSwitcher>
     </div>
   );
 }
