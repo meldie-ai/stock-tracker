@@ -190,8 +190,47 @@ export async function getSoldSummaryForTimeRange(since: Date, until: Date) {
   );
 }
 
-/** Total units restocked (positive Adjust-stock corrections) per product within an arbitrary date range. */
-export async function getRestockedSummary(since: Date, until: Date) {
+export type RestockedSummary = {
+  admin: { categoryNameSnapshot: string; productNameSnapshot: string; value: number }[];
+  staff: { categoryNameSnapshot: string; productNameSnapshot: string; value: number }[];
+  /** The account that made the adjustment has since been deleted, so its role can't be known. */
+  unknown: { categoryNameSnapshot: string; productNameSnapshot: string; value: number }[];
+};
+
+function splitRestockedByRole(
+  entries: {
+    categoryNameSnapshot: string;
+    productNameSnapshot: string;
+    quantityDelta: number;
+    product: { name: string; category: { name: string } } | null;
+    user: { role: "ADMIN" | "STAFF" } | null;
+  }[]
+): RestockedSummary {
+  const admin: { categoryNameSnapshot: string; productNameSnapshot: string; value: number }[] = [];
+  const staff: { categoryNameSnapshot: string; productNameSnapshot: string; value: number }[] = [];
+  const unknown: { categoryNameSnapshot: string; productNameSnapshot: string; value: number }[] = [];
+
+  for (const e of entries) {
+    const row = {
+      categoryNameSnapshot: e.product?.category.name ?? e.categoryNameSnapshot,
+      productNameSnapshot: e.product?.name ?? e.productNameSnapshot,
+      value: e.quantityDelta,
+    };
+    if (e.user?.role === "ADMIN") admin.push(row);
+    else if (e.user?.role === "STAFF") staff.push(row);
+    else unknown.push(row);
+  }
+
+  return { admin: aggregateByProduct(admin), staff: aggregateByProduct(staff), unknown: aggregateByProduct(unknown) };
+}
+
+/**
+ * Total units restocked (positive Adjust-stock corrections) per product within an arbitrary date
+ * range, split by whether an Admin or Staff account made the adjustment. Role is looked up live
+ * (not snapshotted at the time of the action), so a promoted/demoted account's older adjustments
+ * are grouped under its current role.
+ */
+export async function getRestockedSummary(since: Date, until: Date): Promise<RestockedSummary> {
   const entries = await prisma.auditLog.findMany({
     where: { action: "ADJUST", quantityDelta: { gt: 0 }, createdAt: { gte: since, lt: until } },
     select: {
@@ -199,19 +238,14 @@ export async function getRestockedSummary(since: Date, until: Date) {
       productNameSnapshot: true,
       quantityDelta: true,
       product: { select: { name: true, category: { select: { name: true } } } },
+      user: { select: { role: true } },
     },
   });
-  return aggregateByProduct(
-    entries.map((e) => ({
-      categoryNameSnapshot: e.product?.category.name ?? e.categoryNameSnapshot,
-      productNameSnapshot: e.product?.name ?? e.productNameSnapshot,
-      value: e.quantityDelta,
-    }))
-  );
+  return splitRestockedByRole(entries);
 }
 
-/** Total units restocked during one specific shift (same rule as getRestockedSummary, scoped by shiftId instead of a date range). */
-export async function getShiftRestockedSummary(shiftId: string) {
+/** Same admin/staff split as getRestockedSummary, scoped to one shift instead of a date range. */
+export async function getShiftRestockedSummary(shiftId: string): Promise<RestockedSummary> {
   const entries = await prisma.auditLog.findMany({
     where: { shiftId, action: "ADJUST", quantityDelta: { gt: 0 } },
     select: {
@@ -219,15 +253,10 @@ export async function getShiftRestockedSummary(shiftId: string) {
       productNameSnapshot: true,
       quantityDelta: true,
       product: { select: { name: true, category: { select: { name: true } } } },
+      user: { select: { role: true } },
     },
   });
-  return aggregateByProduct(
-    entries.map((e) => ({
-      categoryNameSnapshot: e.product?.category.name ?? e.categoryNameSnapshot,
-      productNameSnapshot: e.product?.name ?? e.productNameSnapshot,
-      value: e.quantityDelta,
-    }))
-  );
+  return splitRestockedByRole(entries);
 }
 
 export type ShiftDeductionEntry = {

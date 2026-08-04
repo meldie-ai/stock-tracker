@@ -46,7 +46,10 @@ export default async function ShiftDetailPage({
       value: s.stockCountAtClose,
     }))
   );
-  const restockedCategories = groupByCategory(await getShiftRestockedSummary(shift.id));
+  const restocked = await getShiftRestockedSummary(shift.id);
+  const restockedByAdmin = groupByCategory(restocked.admin);
+  const restockedByStaff = groupByCategory(restocked.staff);
+  const restockedByUnknown = groupByCategory(restocked.unknown);
   const deductions = await getShiftDeductions(shift.id);
 
   const [revenue, paymentBreakdown] = isAdmin
@@ -78,7 +81,11 @@ export default async function ShiftDetailPage({
             ],
             [
               { heading: "Products Sold", categories: soldCategories },
-              { heading: "Restocked", categories: restockedCategories },
+              { heading: "Restocked by Admin", categories: restockedByAdmin },
+              { heading: "Restocked by Staff", categories: restockedByStaff },
+              ...(restockedByUnknown.length > 0
+                ? [{ heading: "Restocked by Deleted Account", categories: restockedByUnknown }]
+                : []),
               { heading: "Stock Count", categories: stockCategories },
             ]
           )}
@@ -152,13 +159,35 @@ export default async function ShiftDetailPage({
       )}
 
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">Restocked</h2>
-      <div className="mb-6">
-        {restockedCategories.length === 0 ? (
-          <p className="text-sm text-zinc-500">No restocking recorded this shift.</p>
+
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-2">By Admin</h3>
+      <div className="mb-4">
+        {restockedByAdmin.length === 0 ? (
+          <p className="text-sm text-zinc-500">No restocking by an admin this shift.</p>
         ) : (
-          <ShiftBreakdown kind="RESTOCKED" categories={restockedCategories} />
+          <ShiftBreakdown kind="RESTOCKED" categories={restockedByAdmin} />
         )}
       </div>
+
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-2">By Staff</h3>
+      <div className={restockedByUnknown.length > 0 ? "mb-4" : "mb-6"}>
+        {restockedByStaff.length === 0 ? (
+          <p className="text-sm text-zinc-500">No restocking by staff this shift.</p>
+        ) : (
+          <ShiftBreakdown kind="RESTOCKED" categories={restockedByStaff} />
+        )}
+      </div>
+
+      {restockedByUnknown.length > 0 && (
+        <>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-2">
+            By Deleted Account
+          </h3>
+          <div className="mb-6">
+            <ShiftBreakdown kind="RESTOCKED" categories={restockedByUnknown} />
+          </div>
+        </>
+      )}
 
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">Deducted</h2>
       {deductions.length === 0 ? (

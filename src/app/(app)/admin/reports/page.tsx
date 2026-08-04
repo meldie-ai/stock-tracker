@@ -24,9 +24,79 @@ import {
 import { formatPrice } from "@/lib/price";
 import { SHIFT_RETENTION_DAYS, getShiftRetentionCutoff } from "@/lib/retention";
 import { buildShiftReportCopyText } from "@/lib/shiftCopyText";
+import type { ShiftTextCategory } from "@/lib/textTemplates";
 import ShiftBreakdown from "@/components/ShiftBreakdown";
 import CopyButton from "@/components/CopyButton";
 import TabSwitcher from "@/components/TabSwitcher";
+
+/** Copy-text sections for a Restocked breakdown split by admin/staff/unknown, dropping empty groups. */
+function restockedCopySections(
+  adminCategories: ShiftTextCategory[],
+  staffCategories: ShiftTextCategory[],
+  unknownCategories: ShiftTextCategory[],
+  totals: { admin: number; staff: number; unknown: number }
+): { heading: string; categories: ShiftTextCategory[] }[] {
+  return [
+    { heading: `Restocked by Admin (${totals.admin} total)`, categories: adminCategories },
+    { heading: `Restocked by Staff (${totals.staff} total)`, categories: staffCategories },
+    ...(unknownCategories.length > 0
+      ? [{ heading: `Restocked by Deleted Account (${totals.unknown} total)`, categories: unknownCategories }]
+      : []),
+  ];
+}
+
+/** Renders the Restocked section split into By Admin / By Staff / By Deleted Account groups. */
+function restockedBreakdown({
+  adminCategories,
+  staffCategories,
+  unknownCategories,
+  totals,
+  contextLabel,
+}: {
+  adminCategories: ShiftTextCategory[];
+  staffCategories: ShiftTextCategory[];
+  unknownCategories: ShiftTextCategory[];
+  totals: { admin: number; staff: number; unknown: number };
+  contextLabel: string;
+}) {
+  return (
+    <>
+      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Restocked</h2>
+
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mt-3 mb-1">By Admin</h3>
+      <p className="text-xs text-zinc-500 mb-3">{totals.admin} units added {contextLabel}</p>
+      <div className="mb-4">
+        {adminCategories.length === 0 ? (
+          <p className="text-sm text-zinc-500">No restocking by an admin {contextLabel}.</p>
+        ) : (
+          <ShiftBreakdown kind="RESTOCKED" categories={adminCategories} />
+        )}
+      </div>
+
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-1">By Staff</h3>
+      <p className="text-xs text-zinc-500 mb-3">{totals.staff} units added {contextLabel}</p>
+      <div className={unknownCategories.length > 0 ? "mb-4" : "mb-8"}>
+        {staffCategories.length === 0 ? (
+          <p className="text-sm text-zinc-500">No restocking by staff {contextLabel}.</p>
+        ) : (
+          <ShiftBreakdown kind="RESTOCKED" categories={staffCategories} />
+        )}
+      </div>
+
+      {unknownCategories.length > 0 && (
+        <>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 mb-1">
+            By Deleted Account
+          </h3>
+          <p className="text-xs text-zinc-500 mb-3">{totals.unknown} units added {contextLabel}</p>
+          <div className="mb-8">
+            <ShiftBreakdown kind="RESTOCKED" categories={unknownCategories} />
+          </div>
+        </>
+      )}
+    </>
+  );
+}
 
 export default async function SalesReportPage({
   searchParams,
@@ -50,10 +120,17 @@ export default async function SalesReportPage({
         }))
       )
     );
-    const restockedCategories = groupByCategory(await getShiftRestockedSummary(selectedShift.id));
+    const restocked = await getShiftRestockedSummary(selectedShift.id);
+    const restockedAdminCategories = groupByCategory(restocked.admin);
+    const restockedStaffCategories = groupByCategory(restocked.staff);
+    const restockedUnknownCategories = groupByCategory(restocked.unknown);
+    const restockedTotals = {
+      admin: restocked.admin.reduce((sum, r) => sum + r.value, 0),
+      staff: restocked.staff.reduce((sum, r) => sum + r.value, 0),
+      unknown: restocked.unknown.reduce((sum, r) => sum + r.value, 0),
+    };
     const revenue = await getShiftRevenueSummary(selectedShift.id);
     const totalSold = soldCategories.reduce((sum, c) => sum + c.products.reduce((s, p) => s + p.value, 0), 0);
-    const totalRestocked = restockedCategories.reduce((sum, c) => sum + c.products.reduce((s, p) => s + p.value, 0), 0);
 
     const dateRangeLabel = `${formatDateDDMMYY(selectedShift.startedAt)} ${formatTime12(selectedShift.startedAt)} – ${formatDateDDMMYY(selectedShift.endedAt)} ${formatTime12(selectedShift.endedAt)}`;
     const startDayPart = dayPartLabel(selectedShift.startedAt);
@@ -75,7 +152,12 @@ export default async function SalesReportPage({
               ],
               [
                 { heading: `Sold (${totalSold} total)`, categories: soldCategories },
-                { heading: `Restocked (${totalRestocked} total)`, categories: restockedCategories },
+                ...restockedCopySections(
+                  restockedAdminCategories,
+                  restockedStaffCategories,
+                  restockedUnknownCategories,
+                  restockedTotals
+                ),
               ]
             )}
           />
@@ -128,13 +210,13 @@ export default async function SalesReportPage({
           )}
         </div>
 
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Restocked</h2>
-        <p className="text-xs text-zinc-500 mb-3">{totalRestocked} units added this shift</p>
-        {restockedCategories.length === 0 ? (
-          <p className="text-sm text-zinc-500">No restocking recorded this shift.</p>
-        ) : (
-          <ShiftBreakdown kind="RESTOCKED" categories={restockedCategories} />
-        )}
+        {restockedBreakdown({
+          adminCategories: restockedAdminCategories,
+          staffCategories: restockedStaffCategories,
+          unknownCategories: restockedUnknownCategories,
+          totals: restockedTotals,
+          contextLabel: "this shift",
+        })}
       </div>
     );
   }
@@ -147,16 +229,22 @@ export default async function SalesReportPage({
     const [since, until] =
       parsedFromTime <= parsedToTime ? [parsedFromTime, parsedToTime] : [parsedToTime, parsedFromTime];
 
-    const [soldRows, restockedRows, revenue] = await Promise.all([
+    const [soldRows, restocked, revenue] = await Promise.all([
       getSoldSummaryForTimeRange(since, until),
       getRestockedSummary(since, until),
       getRevenueSummaryForTimeRange(since, until),
     ]);
 
     const soldCategories = groupByCategory(soldRows);
-    const restockedCategories = groupByCategory(restockedRows);
+    const restockedAdminCategories = groupByCategory(restocked.admin);
+    const restockedStaffCategories = groupByCategory(restocked.staff);
+    const restockedUnknownCategories = groupByCategory(restocked.unknown);
+    const restockedTotals = {
+      admin: restocked.admin.reduce((sum, r) => sum + r.value, 0),
+      staff: restocked.staff.reduce((sum, r) => sum + r.value, 0),
+      unknown: restocked.unknown.reduce((sum, r) => sum + r.value, 0),
+    };
     const totalSold = soldRows.reduce((sum, r) => sum + r.value, 0);
-    const totalRestocked = restockedRows.reduce((sum, r) => sum + r.value, 0);
 
     const rangeLabel = `${formatDateDDMMYY(since)} ${formatTime12(since)} – ${formatDateDDMMYY(until)} ${formatTime12(until)}`;
     const retentionCutoff = getShiftRetentionCutoff();
@@ -174,7 +262,12 @@ export default async function SalesReportPage({
               ],
               [
                 { heading: `Sold (${totalSold} total)`, categories: soldCategories },
-                { heading: `Restocked (${totalRestocked} total)`, categories: restockedCategories },
+                ...restockedCopySections(
+                  restockedAdminCategories,
+                  restockedStaffCategories,
+                  restockedUnknownCategories,
+                  restockedTotals
+                ),
               ]
             )}
           />
@@ -231,13 +324,13 @@ export default async function SalesReportPage({
           )}
         </div>
 
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Restocked</h2>
-        <p className="text-xs text-zinc-500 mb-3">{totalRestocked} units added in this range</p>
-        {restockedCategories.length === 0 ? (
-          <p className="text-sm text-zinc-500">No restocking recorded in this range.</p>
-        ) : (
-          <ShiftBreakdown kind="RESTOCKED" categories={restockedCategories} />
-        )}
+        {restockedBreakdown({
+          adminCategories: restockedAdminCategories,
+          staffCategories: restockedStaffCategories,
+          unknownCategories: restockedUnknownCategories,
+          totals: restockedTotals,
+          contextLabel: "in this range",
+        })}
       </div>
     );
   }
@@ -256,16 +349,22 @@ export default async function SalesReportPage({
     ({ since, until } = getWeeklyReportDateRange());
   }
 
-  const [soldRows, restockedRows, revenue] = await Promise.all([
+  const [soldRows, restocked, revenue] = await Promise.all([
     getSoldSummary(since, until),
     getRestockedSummary(since, until),
     getRevenueSummary(since, until),
   ]);
 
   const soldCategories = groupByCategory(soldRows);
-  const restockedCategories = groupByCategory(restockedRows);
+  const restockedAdminCategories = groupByCategory(restocked.admin);
+  const restockedStaffCategories = groupByCategory(restocked.staff);
+  const restockedUnknownCategories = groupByCategory(restocked.unknown);
+  const restockedTotals = {
+    admin: restocked.admin.reduce((sum, r) => sum + r.value, 0),
+    staff: restocked.staff.reduce((sum, r) => sum + r.value, 0),
+    unknown: restocked.unknown.reduce((sum, r) => sum + r.value, 0),
+  };
   const totalSold = soldRows.reduce((sum, r) => sum + r.value, 0);
-  const totalRestocked = restockedRows.reduce((sum, r) => sum + r.value, 0);
 
   // `until` is exclusive (start of the day after the range) — step back 1ms to land on the
   // actual last included day for display.
@@ -287,7 +386,12 @@ export default async function SalesReportPage({
             ],
             [
               { heading: `Sold (${totalSold} total)`, categories: soldCategories },
-              { heading: `Restocked (${totalRestocked} total)`, categories: restockedCategories },
+              ...restockedCopySections(
+                restockedAdminCategories,
+                restockedStaffCategories,
+                restockedUnknownCategories,
+                restockedTotals
+              ),
             ]
           )}
         />
@@ -339,13 +443,13 @@ export default async function SalesReportPage({
         )}
       </div>
 
-      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Restocked</h2>
-      <p className="text-xs text-zinc-500 mb-3">{totalRestocked} units added in this range</p>
-      {restockedCategories.length === 0 ? (
-        <p className="text-sm text-zinc-500">No restocking recorded in this range.</p>
-      ) : (
-        <ShiftBreakdown kind="RESTOCKED" categories={restockedCategories} />
-      )}
+      {restockedBreakdown({
+        adminCategories: restockedAdminCategories,
+        staffCategories: restockedStaffCategories,
+        unknownCategories: restockedUnknownCategories,
+        totals: restockedTotals,
+        contextLabel: "in this range",
+      })}
     </div>
   );
 }
