@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  getShiftDeductions,
   getShiftDetail,
   getShiftPaymentBreakdown,
   getShiftRestockedSummary,
@@ -50,7 +49,6 @@ export default async function ShiftDetailPage({
   const restockedByAdmin = groupByCategory(restocked.admin);
   const restockedByStaff = groupByCategory(restocked.staff);
   const restockedByUnknown = groupByCategory(restocked.unknown);
-  const deductions = await getShiftDeductions(shift.id);
 
   const [revenue, paymentBreakdown] = isAdmin
     ? await Promise.all([getShiftRevenueSummary(shift.id), getShiftPaymentBreakdown(shift.id)])
@@ -187,31 +185,6 @@ export default async function ShiftDetailPage({
             <ShiftBreakdown kind="RESTOCKED" categories={restockedByUnknown} />
           </div>
         </>
-      )}
-
-      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">Deducted</h2>
-      {deductions.length === 0 ? (
-        <p className="text-sm text-zinc-500 mb-6">No stock deductions this shift.</p>
-      ) : (
-        <div className="flex flex-col gap-2 mb-6">
-          {deductions.map((d) => (
-            <div
-              key={d.id}
-              className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 text-sm"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-medium text-red-600 dark:text-red-400">{d.productName}</span>
-                <span className="font-semibold text-red-600 dark:text-red-400 tabular-nums">
-                  &minus;{d.quantity}
-                </span>
-              </div>
-              <p className="text-xs text-zinc-500 mt-1">
-                {d.reason} &middot; {d.usernameSnapshot} &middot; {formatDateDDMMYY(d.createdAt)}{" "}
-                {formatTime12(d.createdAt)}
-              </p>
-            </div>
-          ))}
-        </div>
       )}
 
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mb-3">
