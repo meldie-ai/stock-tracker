@@ -33,27 +33,38 @@ export default function ShiftControls({
   function handleStart() {
     setError(null);
     startTransition(async () => {
-      const res = await fetch("/api/shifts/start", { method: "POST" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Failed to start shift");
-        return;
+      try {
+        const res = await fetchWithTimeout("/api/shifts/start", { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(data.error ?? "Failed to start shift");
+          return;
+        }
+        router.refresh();
+      } catch (err) {
+        setError(describeFetchError(err));
       }
-      router.refresh();
     });
   }
 
   function handleEnd() {
     setError(null);
     startTransition(async () => {
-      const res = await fetch("/api/shifts/close", { method: "POST" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Failed to end shift");
-        return;
+      try {
+        // Closing writes a stock snapshot row for every product in the catalog, so it's
+        // heavier than a typical action — give it more room than the default timeout before
+        // giving up and telling the user something's wrong.
+        const res = await fetchWithTimeout("/api/shifts/close", { method: "POST" }, 20_000);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(data.error ?? "Failed to end shift");
+          return;
+        }
+        setConfirmingEnd(false);
+        router.refresh();
+      } catch (err) {
+        setError(describeFetchError(err));
       }
-      setConfirmingEnd(false);
-      router.refresh();
     });
   }
 
@@ -113,7 +124,7 @@ export default function ShiftControls({
                 disabled={isPending}
                 className="rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white disabled:opacity-50"
               >
-                Confirm
+                {isPending ? "Ending…" : "Confirm"}
               </button>
               <button
                 onClick={() => setConfirmingEnd(false)}
