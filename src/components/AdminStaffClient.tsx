@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
+import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
 
 type StaffUser = {
   id: string;
@@ -24,20 +25,24 @@ export default function AdminStaffClient({ users }: { users: StaffUser[] }) {
   function run(action: () => Promise<Response>) {
     setError(null);
     startTransition(async () => {
-      const res = await action();
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Something went wrong");
-        return;
+      try {
+        const res = await action();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(data.error ?? "Something went wrong");
+          return;
+        }
+        router.refresh();
+      } catch (err) {
+        setError(describeFetchError(err));
       }
-      router.refresh();
     });
   }
 
   function createStaff() {
     if (!newUsername.trim() || !newPassword) return;
     run(() =>
-      fetch("/api/admin/users", {
+      fetchWithTimeout("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: newUsername.trim(), password: newPassword }),
@@ -55,17 +60,17 @@ export default function AdminStaffClient({ users }: { users: StaffUser[] }) {
     ) {
       return;
     }
-    run(() => fetch(`/api/admin/users/${id}/deactivate`, { method: "POST" }));
+    run(() => fetchWithTimeout(`/api/admin/users/${id}/deactivate`, { method: "POST" }));
   }
 
   function reactivate(id: string) {
-    run(() => fetch(`/api/admin/users/${id}/reactivate`, { method: "POST" }));
+    run(() => fetchWithTimeout(`/api/admin/users/${id}/reactivate`, { method: "POST" }));
   }
 
   function submitResetPassword(id: string) {
     if (!resetPasswordValue) return;
     run(() =>
-      fetch(`/api/admin/users/${id}/reset-password`, {
+      fetchWithTimeout(`/api/admin/users/${id}/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: resetPasswordValue }),

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
 
 type Product = {
   id: string;
@@ -29,20 +30,24 @@ export default function ManageClient({ categories }: { categories: Category[] })
   function run(action: () => Promise<Response>) {
     setError(null);
     startTransition(async () => {
-      const res = await action();
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Something went wrong");
-        return;
+      try {
+        const res = await action();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(data.error ?? "Something went wrong");
+          return;
+        }
+        router.refresh();
+      } catch (err) {
+        setError(describeFetchError(err));
       }
-      router.refresh();
     });
   }
 
   function addCategory() {
     if (!newCategoryName.trim()) return;
     run(() =>
-      fetch("/api/categories", {
+      fetchWithTimeout("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newCategoryName.trim() }),
@@ -54,7 +59,7 @@ export default function ManageClient({ categories }: { categories: Category[] })
   function renameCategory(id: string, name: string) {
     if (!name.trim()) return;
     run(() =>
-      fetch(`/api/categories/${id}`, {
+      fetchWithTimeout(`/api/categories/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim() }),
@@ -64,7 +69,7 @@ export default function ManageClient({ categories }: { categories: Category[] })
 
   function deleteCategory(id: string) {
     if (!confirm("Delete this category? It must have no products left in it.")) return;
-    run(() => fetch(`/api/categories/${id}`, { method: "DELETE" }));
+    run(() => fetchWithTimeout(`/api/categories/${id}`, { method: "DELETE" }));
   }
 
   function addProduct(categoryId: string) {
@@ -72,7 +77,7 @@ export default function ManageClient({ categories }: { categories: Category[] })
     if (!draft?.name.trim()) return;
     const stockCount = draft.stock.trim() === "" ? 0 : Number(draft.stock);
     run(() =>
-      fetch("/api/products", {
+      fetchWithTimeout("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ categoryId, name: draft.name.trim(), stockCount }),
@@ -84,7 +89,7 @@ export default function ManageClient({ categories }: { categories: Category[] })
   function renameProduct(id: string, name: string) {
     if (!name.trim()) return;
     run(() =>
-      fetch(`/api/products/${id}`, {
+      fetchWithTimeout(`/api/products/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim() }),
@@ -94,7 +99,7 @@ export default function ManageClient({ categories }: { categories: Category[] })
 
   function moveProduct(id: string, categoryId: string) {
     run(() =>
-      fetch(`/api/products/${id}`, {
+      fetchWithTimeout(`/api/products/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ categoryId }),
@@ -104,12 +109,12 @@ export default function ManageClient({ categories }: { categories: Category[] })
 
   function deleteProduct(id: string) {
     if (!confirm("Delete this product? This cannot be undone.")) return;
-    run(() => fetch(`/api/products/${id}`, { method: "DELETE" }));
+    run(() => fetchWithTimeout(`/api/products/${id}`, { method: "DELETE" }));
   }
 
   function linkProduct(id: string, linkedCartonProductId: string) {
     run(() =>
-      fetch(`/api/products/${id}`, {
+      fetchWithTimeout(`/api/products/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ linkedCartonProductId: linkedCartonProductId || null }),

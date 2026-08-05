@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { onStockUpdated } from "@/lib/updateSignal";
 import { formatTime12 } from "@/lib/dateFormat";
+import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
 import type { Role } from "@/generated/prisma/client";
 
 const links = [
@@ -38,6 +39,8 @@ export default function NavBar({
     initialLastUpdated ? new Date(initialLastUpdated) : null
   );
   const [syncedLastUpdated, setSyncedLastUpdated] = useState(initialLastUpdated);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   // Close the menu when navigation changes the route, without an effect:
   // adjusting state during render is React's recommended pattern for this.
@@ -76,9 +79,21 @@ export default function NavBar({
   }, [open]);
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/login");
-    router.refresh();
+    setLogoutError(null);
+    setLoggingOut(true);
+    try {
+      const res = await fetchWithTimeout("/api/auth/logout", { method: "POST" });
+      if (!res.ok) {
+        setLogoutError("Failed to log out");
+        setLoggingOut(false);
+        return;
+      }
+      router.replace("/login");
+      router.refresh();
+    } catch (err) {
+      setLogoutError(describeFetchError(err));
+      setLoggingOut(false);
+    }
   }
 
   return (
@@ -152,14 +167,20 @@ export default function NavBar({
                 ))}
             </nav>
 
-            <div className="flex items-center justify-between border-t border-black/10 dark:border-zinc-900 pt-3">
-              <span className="text-sm text-zinc-500">{username}</span>
-              <button
-                onClick={handleLogout}
-                className="text-sm text-zinc-500 hover:text-red-600"
-              >
-                Log out
-              </button>
+            <div className="border-t border-black/10 dark:border-zinc-900 pt-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-zinc-500">{username}</span>
+                <button
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                  className="text-sm text-zinc-500 hover:text-red-600 disabled:opacity-50"
+                >
+                  {loggingOut ? "Logging out…" : "Log out"}
+                </button>
+              </div>
+              {logoutError && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{logoutError}</p>
+              )}
             </div>
           </div>
         </>
