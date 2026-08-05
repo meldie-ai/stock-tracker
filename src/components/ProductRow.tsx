@@ -337,9 +337,9 @@ export default function ProductRow({
               <button
                 onClick={handleAdjustSave}
                 disabled={isPending}
-                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
               >
-                Save
+                {isPending ? "Saving…" : "Save"}
               </button>
               <button
                 onClick={() => {
@@ -432,9 +432,9 @@ export default function ProductRow({
               <button
                 onClick={handlePriceSave}
                 disabled={isPending}
-                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
               >
-                Save
+                {isPending ? "Saving…" : "Save"}
               </button>
               <button
                 onClick={() => setPriceOpen(false)}
