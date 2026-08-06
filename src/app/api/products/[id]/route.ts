@@ -17,9 +17,25 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
+  let data = parsed.data;
+
+  // A "refills from" carton link only ever makes sense on a Singles product. If this move
+  // takes it out of Singles, drop any existing link rather than leaving it dangling — an
+  // orphaned link would otherwise sit invisible (Manage only shows the picker for Singles
+  // products) until this product later hits 0 stock and auto-refills itself unexpectedly.
+  if (data.categoryId) {
+    const targetCategory = await prisma.category.findUnique({
+      where: { id: data.categoryId },
+      select: { name: true },
+    });
+    if (targetCategory && targetCategory.name.trim().toUpperCase() !== "SINGLES") {
+      data = { ...data, linkedCartonProductId: null };
+    }
+  }
+
   const product = await prisma.product.update({
     where: { id },
-    data: parsed.data,
+    data,
   });
 
   return NextResponse.json(product);

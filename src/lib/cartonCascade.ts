@@ -3,8 +3,21 @@ import { recordAuditEntry } from "@/lib/auditLog";
 
 export const PACK_SIZE = 10;
 
+/**
+ * Manage only ever offers the "Refills from" link on a Singles product, but
+ * linkedCartonProductId itself doesn't get cleared if that product is later
+ * moved to a different category (e.g. re-filed under Cartons) — without this
+ * check, a stale link would keep auto-refilling a product that's no longer
+ * meant to have that behavior at all, which is exactly what a Cartons
+ * product hitting 0 and jumping back to 10 on its own would look like.
+ */
+function isSinglesCategory(categoryName: string): boolean {
+  return categoryName.trim().toUpperCase() === "SINGLES";
+}
+
 export type CascadeCheckInput = {
   productName: string;
+  categoryName: string;
   linkedCartonProductId: string | null;
   newStockCount: number;
   userId: string;
@@ -19,8 +32,8 @@ export type CascadeCheckResult = {
 
 /**
  * Call unconditionally after any write to a product's stockCount. No-ops
- * unless the product has an explicit linkedCartonProductId set (chosen in
- * Manage) and just hit exactly 0.
+ * unless the product is currently in the Singles category, has an explicit
+ * linkedCartonProductId set (chosen in Manage), and just hit exactly 0.
  *
  * This used to match a Singles product to its carton by category/product
  * name — a deliberate simplicity tradeoff that turned out to be too
@@ -32,7 +45,11 @@ export async function tryCascadeSinglesFromCarton(
   tx: Prisma.TransactionClient,
   input: CascadeCheckInput
 ): Promise<CascadeCheckResult> {
-  if (!input.linkedCartonProductId || input.newStockCount !== 0) {
+  if (
+    !input.linkedCartonProductId ||
+    input.newStockCount !== 0 ||
+    !isSinglesCategory(input.categoryName)
+  ) {
     return { cascaded: false, singlesStockCount: input.newStockCount };
   }
 
@@ -70,6 +87,7 @@ export async function tryCascadeSinglesFromCarton(
 export type EnsureStockInput = {
   productId: string;
   productName: string;
+  categoryName: string;
   linkedCartonProductId: string | null;
   currentStockCount: number;
   quantityNeeded: number;
@@ -97,7 +115,7 @@ export async function ensureSinglesStockForSale(
   if (input.currentStockCount >= input.quantityNeeded) {
     return { ok: true, stockBefore: input.currentStockCount };
   }
-  if (!input.linkedCartonProductId) {
+  if (!input.linkedCartonProductId || !isSinglesCategory(input.categoryName)) {
     return { ok: false };
   }
 

@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
         let finalStockCount = updatedProduct.stockCount;
         const cascade = await tryCascadeSinglesFromCarton(tx, {
           productName: product.name,
+          categoryName: product.category.name,
           linkedCartonProductId: product.linkedCartonProductId,
           newStockCount: updatedProduct.stockCount,
           userId: auth.user.userId,

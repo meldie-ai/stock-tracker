@@ -39,6 +39,7 @@ export async function POST(
       const ensured = await ensureSinglesStockForSale(tx, {
         productId: product.id,
         productName: product.name,
+        categoryName: product.category.name,
         linkedCartonProductId: product.linkedCartonProductId,
         currentStockCount: product.stockCount,
         quantityNeeded: quantity,
@@ -70,6 +71,7 @@ export async function POST(
       let finalStockCount = updatedProduct.stockCount;
       const cascade = await tryCascadeSinglesFromCarton(tx, {
         productName: product.name,
+        categoryName: product.category.name,
         linkedCartonProductId: product.linkedCartonProductId,
         newStockCount: updatedProduct.stockCount,
         userId: auth.user.userId,
