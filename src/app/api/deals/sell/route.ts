@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
 import { dealSellSchema } from "@/lib/validation";
 import { resolveEffectiveDeal } from "@/lib/pricing";
-import { tryCascadeSinglesFromCarton } from "@/lib/cartonCascade";
+import { ensureSinglesStockForSale, tryCascadeSinglesFromCarton } from "@/lib/cartonCascade";
 import { recordAuditEntry } from "@/lib/auditLog";
 
 // Deals are cash-only and can span different products — but only ones that share the
@@ -72,9 +72,19 @@ export async function POST(request: NextRequest) {
 
       for (const item of items) {
         const product = productById.get(item.productId)!;
-        if (product.stockCount < item.quantity) {
-          throw new Error(`INSUFFICIENT_STOCK:${product.name}`);
-        }
+
+        const ensured = await ensureSinglesStockForSale(tx, {
+          productId: product.id,
+          productName: product.name,
+          categoryName: product.category.name,
+          linkedCartonProductId: product.linkedCartonProductId,
+          currentStockCount: product.stockCount,
+          quantityNeeded: item.quantity,
+          userId: auth.user.userId,
+          usernameSnapshot: auth.user.username,
+          shiftId: activeShift.id,
+        });
+        if (!ensured.ok) throw new Error(`INSUFFICIENT_STOCK:${product.name}`);
 
         const extraCents = Math.max(
           0,
@@ -96,7 +106,7 @@ export async function POST(request: NextRequest) {
           productNameSnapshot: product.name,
           categoryNameSnapshot: product.category.name,
           quantityDelta: -item.quantity,
-          stockBefore: product.stockCount,
+          stockBefore: ensured.stockBefore,
           stockAfter: updatedProduct.stockCount,
           shiftId: activeShift.id,
           note: "Deal sale",
