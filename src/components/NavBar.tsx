@@ -26,10 +26,12 @@ export default function NavBar({
   username,
   role,
   initialLastUpdated,
+  shopName,
 }: {
   username: string;
   role: Role;
   initialLastUpdated: string | null;
+  shopName: string | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -112,6 +114,11 @@ export default function NavBar({
             <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
               Stock Tracker
             </span>
+            {shopName && (
+              <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white">
+                {shopName}
+              </span>
+            )}
           </div>
           <span className="text-xs text-zinc-500 tabular-nums">
             {lastUpdated ? `Updated ${formatTime12(lastUpdated)}` : ""}

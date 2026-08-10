@@ -12,8 +12,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const shopName = process.env.NEXT_PUBLIC_SHOP_NAME;
+
 export const metadata: Metadata = {
-  title: "Stock Tracker",
+  title: shopName ? `Stock Tracker · ${shopName}` : "Stock Tracker",
   description: "Private stock and sales tracker",
 };
 

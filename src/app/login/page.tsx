@@ -44,9 +44,16 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 shadow-sm"
       >
-        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 mb-1">
-          Stock Tracker
-        </h1>
+        <div className="flex items-center gap-2 mb-1">
+          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+            Stock Tracker
+          </h1>
+          {process.env.NEXT_PUBLIC_SHOP_NAME && (
+            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white">
+              {process.env.NEXT_PUBLIC_SHOP_NAME}
+            </span>
+          )}
+        </div>
         <p className="text-sm text-zinc-500 mb-6">Sign in to continue</p>
 
         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">

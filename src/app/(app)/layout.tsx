@@ -19,6 +19,7 @@ export default async function AppLayout({
         username={user.username}
         role={user.role}
         initialLastUpdated={lastStockUpdate ? lastStockUpdate.toISOString() : null}
+        shopName={process.env.NEXT_PUBLIC_SHOP_NAME ?? null}
       />
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-6">
         {children}
