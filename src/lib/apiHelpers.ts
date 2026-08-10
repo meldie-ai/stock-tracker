@@ -29,6 +29,26 @@ export async function requireAuthenticatedRequest(
   return { user };
 }
 
+/**
+ * If a shift is currently active, only the staff member who started it may sell,
+ * adjust stock, or edit prices — keeps accountability for what happens during a
+ * shift with whoever is actually running it, even if another staff member is
+ * logged in elsewhere at the same time. No active shift means no restriction
+ * (e.g. price editing is allowed outside of any shift).
+ */
+export function shiftOwnershipError(
+  activeShift: { startedByUserId: string; startedByUser: { username: string } } | null,
+  userId: string
+): NextResponse | null {
+  if (activeShift && activeShift.startedByUserId !== userId) {
+    return NextResponse.json(
+      { error: `Only ${activeShift.startedByUser.username}, who started this shift, can do this` },
+      { status: 403 }
+    );
+  }
+  return null;
+}
+
 /** Like requireAuthenticatedRequest, but also requires role === "ADMIN". */
 export async function requireAdminRequest(
   request: NextRequest

@@ -1,14 +1,20 @@
 import { getActiveShift, getCategoriesWithProducts, sumSoldByProductId } from "@/lib/data";
 import { formatTime12, formatDateDDMMYY } from "@/lib/dateFormat";
+import { getCurrentUser } from "@/lib/session";
 import ShiftControls from "@/components/ShiftControls";
 import CategorySection from "@/components/CategorySection";
 import TabSwitcher from "@/components/TabSwitcher";
 
 export default async function DashboardPage() {
-  const [categories, activeShift] = await Promise.all([
+  const [categories, activeShift, currentUser] = await Promise.all([
     getCategoriesWithProducts(),
     getActiveShift(),
+    getCurrentUser(),
   ]);
+
+  // No active shift means no owner to enforce; otherwise only the person who
+  // started it may sell, adjust stock, or edit prices — see shiftOwnershipError.
+  const isShiftOwner = !activeShift || activeShift.startedByUserId === currentUser?.userId;
 
   const soldByProductId = activeShift ? sumSoldByProductId(activeShift.sales) : new Map<string, number>();
 
@@ -29,6 +35,7 @@ export default async function DashboardPage() {
         hasActiveShift={!!activeShift}
         startedAtLabel={startedAtLabel}
         startedByUsername={activeShift?.startedByUser.username ?? null}
+        isShiftOwner={isShiftOwner}
         notes={notes}
       />
 
@@ -53,6 +60,7 @@ export default async function DashboardPage() {
               products={category.products}
               soldByProductId={soldByProductId}
               hasActiveShift={!!activeShift}
+              isShiftOwner={isShiftOwner}
             />
           ))}
         </TabSwitcher>

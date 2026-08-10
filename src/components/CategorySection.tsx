@@ -23,6 +23,7 @@ export default function CategorySection({
   products,
   soldByProductId,
   hasActiveShift,
+  isShiftOwner,
 }: {
   categoryId: string;
   categoryName: string;
@@ -34,6 +35,7 @@ export default function CategorySection({
   products: Product[];
   soldByProductId: Map<string, number>;
   hasActiveShift: boolean;
+  isShiftOwner: boolean;
 }) {
   return (
     <section className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-16">
@@ -47,6 +49,7 @@ export default function CategorySection({
         dealNote={categoryDealNote}
         dealQuantity={categoryDealQuantity}
         dealPriceCents={categoryDealPriceCents}
+        isShiftOwner={isShiftOwner}
       />
       <CategoryDealCart
         categoryCashPriceCents={categoryCashPriceCents}
@@ -56,6 +59,7 @@ export default function CategorySection({
         products={products}
         soldByProductId={soldByProductId}
         hasActiveShift={hasActiveShift}
+        isShiftOwner={isShiftOwner}
       />
     </section>
   );

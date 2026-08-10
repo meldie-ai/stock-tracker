@@ -29,6 +29,7 @@ export default function CategoryDealCart({
   products,
   soldByProductId,
   hasActiveShift,
+  isShiftOwner,
 }: {
   categoryCashPriceCents: number | null;
   categoryCardPriceCents: number | null;
@@ -37,6 +38,7 @@ export default function CategoryDealCart({
   products: Product[];
   soldByProductId: Map<string, number>;
   hasActiveShift: boolean;
+  isShiftOwner: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -127,6 +129,7 @@ export default function CategoryDealCart({
               stockCount={product.stockCount}
               soldCount={soldByProductId.get(product.id) ?? null}
               hasActiveShift={hasActiveShift}
+              isShiftOwner={isShiftOwner}
               cashPriceCents={product.cashPriceCents}
               cardPriceCents={product.cardPriceCents}
               dealNote={product.dealNote}

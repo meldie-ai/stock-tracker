@@ -15,11 +15,13 @@ export default function ShiftControls({
   hasActiveShift,
   startedAtLabel,
   startedByUsername,
+  isShiftOwner,
   notes,
 }: {
   hasActiveShift: boolean;
   startedAtLabel: string | null;
   startedByUsername: string | null;
+  isShiftOwner: boolean;
   notes: ShiftNoteView[];
 }) {
   const router = useRouter();
@@ -107,6 +109,11 @@ export default function ShiftControls({
               </>
             )}
           </p>
+          {!isShiftOwner && (
+            <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
+              Only {startedByUsername} can sell, adjust stock, or edit prices while this shift is active.
+            </p>
+          )}
           {!confirmingEnd ? (
             <button
               onClick={() => setConfirmingEnd(true)}

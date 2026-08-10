@@ -12,6 +12,7 @@ export default function CategoryPriceEditor({
   dealNote,
   dealQuantity,
   dealPriceCents,
+  isShiftOwner,
 }: {
   categoryId: string;
   cashPriceCents: number | null;
@@ -19,6 +20,7 @@ export default function CategoryPriceEditor({
   dealNote: string | null;
   dealQuantity: number | null;
   dealPriceCents: number | null;
+  isShiftOwner: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -106,7 +108,7 @@ export default function CategoryPriceEditor({
           )}
         </p>
       )}
-      {!open ? (
+      {!isShiftOwner ? null : !open ? (
         <button
           onClick={() => {
             setCashPriceValue(centsToInputValue(cashPriceCents));

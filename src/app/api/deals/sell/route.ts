@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
+import { requireAuthenticatedRequest, shiftOwnershipError } from "@/lib/apiHelpers";
 import { dealSellSchema } from "@/lib/validation";
 import { resolveEffectiveDeal } from "@/lib/pricing";
 import { ensureSinglesStockForSale, tryCascadeSinglesFromCarton } from "@/lib/cartonCascade";
@@ -28,10 +28,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Duplicate product in deal" }, { status: 400 });
   }
 
-  const activeShift = await prisma.shift.findFirst({ where: { status: "ACTIVE" } });
+  const activeShift = await prisma.shift.findFirst({
+    where: { status: "ACTIVE" },
+    include: { startedByUser: { select: { username: true } } },
+  });
   if (!activeShift) {
     return NextResponse.json({ error: "Start a shift to do this" }, { status: 409 });
   }
+  const ownershipError = shiftOwnershipError(activeShift, auth.user.userId);
+  if (ownershipError) return ownershipError;
 
   try {
     const result = await prisma.$transaction(async (tx) => {

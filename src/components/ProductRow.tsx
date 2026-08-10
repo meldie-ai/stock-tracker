@@ -15,6 +15,7 @@ export default function ProductRow({
   stockCount,
   soldCount,
   hasActiveShift,
+  isShiftOwner,
   cashPriceCents,
   cardPriceCents,
   dealNote,
@@ -29,6 +30,7 @@ export default function ProductRow({
   stockCount: number;
   soldCount: number | null;
   hasActiveShift: boolean;
+  isShiftOwner: boolean;
   cashPriceCents: number | null;
   cardPriceCents: number | null;
   dealNote: string | null;
@@ -265,7 +267,7 @@ export default function ProductRow({
         )}
       </div>
 
-      {hasActiveShift && !soldOut && (
+      {hasActiveShift && isShiftOwner && !soldOut && (
         <div className="mt-2 flex flex-wrap items-center justify-end gap-1.5">
           <input
             type="number"
@@ -312,6 +314,7 @@ export default function ProductRow({
         </div>
       )}
 
+      {isShiftOwner && (
       <div className="mt-1">
         {!adjustOpen ? (
           <button
@@ -371,8 +374,9 @@ export default function ProductRow({
           </div>
         )}
       </div>
+      )}
 
-      {showPriceEditor && (
+      {showPriceEditor && isShiftOwner && (
         <div className="mt-1">
           {!priceOpen ? (
             <button

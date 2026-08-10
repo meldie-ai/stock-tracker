@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
+import { requireAuthenticatedRequest, shiftOwnershipError } from "@/lib/apiHelpers";
 import { priceSchema } from "@/lib/validation";
 import { recordAuditEntry } from "@/lib/auditLog";
 
@@ -10,6 +10,13 @@ export async function POST(
 ) {
   const auth = await requireAuthenticatedRequest(request);
   if ("error" in auth) return auth.error;
+
+  const activeShift = await prisma.shift.findFirst({
+    where: { status: "ACTIVE" },
+    select: { startedByUserId: true, startedByUser: { select: { username: true } } },
+  });
+  const ownershipError = shiftOwnershipError(activeShift, auth.user.userId);
+  if (ownershipError) return ownershipError;
 
   const { id: categoryId } = await params;
   const body = await request.json().catch(() => null);
