@@ -34,13 +34,15 @@ export async function requireAuthenticatedRequest(
  * adjust stock, or edit prices — keeps accountability for what happens during a
  * shift with whoever is actually running it, even if another staff member is
  * logged in elsewhere at the same time. No active shift means no restriction
- * (e.g. price editing is allowed outside of any shift).
+ * (e.g. price editing is allowed outside of any shift). Admins are always
+ * exempt — this is about staff accountability, not locking out oversight.
  */
 export function shiftOwnershipError(
   activeShift: { startedByUserId: string; startedByUser: { username: string } } | null,
-  userId: string
+  user: { userId: string; role: CurrentUser["role"] }
 ): NextResponse | null {
-  if (activeShift && activeShift.startedByUserId !== userId) {
+  if (user.role === "ADMIN") return null;
+  if (activeShift && activeShift.startedByUserId !== user.userId) {
     return NextResponse.json(
       { error: `Only ${activeShift.startedByUser.username}, who started this shift, can do this` },
       { status: 403 }

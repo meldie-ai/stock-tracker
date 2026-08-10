@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   if (!activeShift) {
     return NextResponse.json({ error: "Start a shift to do this" }, { status: 409 });
   }
-  const ownershipError = shiftOwnershipError(activeShift, auth.user.userId);
+  const ownershipError = shiftOwnershipError(activeShift, auth.user);
   if (ownershipError) return ownershipError;
 
   try {

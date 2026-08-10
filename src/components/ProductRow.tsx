@@ -302,7 +302,7 @@ export default function ProductRow({
         </div>
       )}
 
-      {hasActiveShift && (soldCount ?? 0) > 0 && (
+      {hasActiveShift && isShiftOwner && (soldCount ?? 0) > 0 && (
         <div className="mt-1">
           <button
             onClick={handleUndoLastSale}

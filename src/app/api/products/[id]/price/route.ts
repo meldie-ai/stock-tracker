@@ -15,7 +15,7 @@ export async function POST(
     where: { status: "ACTIVE" },
     select: { startedByUserId: true, startedByUser: { select: { username: true } } },
   });
-  const ownershipError = shiftOwnershipError(activeShift, auth.user.userId);
+  const ownershipError = shiftOwnershipError(activeShift, auth.user);
   if (ownershipError) return ownershipError;
 
   const { id: productId } = await params;

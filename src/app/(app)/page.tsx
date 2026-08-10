@@ -13,8 +13,12 @@ export default async function DashboardPage() {
   ]);
 
   // No active shift means no owner to enforce; otherwise only the person who
-  // started it may sell, adjust stock, or edit prices — see shiftOwnershipError.
-  const isShiftOwner = !activeShift || activeShift.startedByUserId === currentUser?.userId;
+  // started it (or an admin) may sell, adjust stock, or edit prices — mirrors
+  // shiftOwnershipError, which exempts admins the same way.
+  const isShiftOwner =
+    !activeShift ||
+    activeShift.startedByUserId === currentUser?.userId ||
+    currentUser?.role === "ADMIN";
 
   const soldByProductId = activeShift ? sumSoldByProductId(activeShift.sales) : new Map<string, number>();
 
@@ -35,7 +39,6 @@ export default async function DashboardPage() {
         hasActiveShift={!!activeShift}
         startedAtLabel={startedAtLabel}
         startedByUsername={activeShift?.startedByUser.username ?? null}
-        isShiftOwner={isShiftOwner}
         notes={notes}
       />
 

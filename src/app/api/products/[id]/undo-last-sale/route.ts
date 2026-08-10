@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
+import { requireAuthenticatedRequest, shiftOwnershipError } from "@/lib/apiHelpers";
 import { recordAuditEntry } from "@/lib/auditLog";
 import { resolveUnitPriceCents } from "@/lib/pricing";
 import type { PaymentMethod } from "@/generated/prisma/client";
@@ -24,10 +24,13 @@ export async function POST(
 
   const activeShift = await prisma.shift.findFirst({
     where: { status: "ACTIVE" },
+    include: { startedByUser: { select: { username: true } } },
   });
   if (!activeShift) {
     return NextResponse.json({ error: "Start a shift to do this" }, { status: 409 });
   }
+  const ownershipError = shiftOwnershipError(activeShift, auth.user);
+  if (ownershipError) return ownershipError;
 
   try {
     const result = await prisma.$transaction(async (tx) => {
