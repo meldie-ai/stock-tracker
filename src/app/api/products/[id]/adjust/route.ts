@@ -41,7 +41,7 @@ export async function POST(
       const nextStock = mode === "set" ? value : product.stockCount + value;
       if (nextStock < 0) throw new Error("NEGATIVE");
       const quantityDelta = nextStock - product.stockCount;
-      if (quantityDelta < 0 && !reason) throw new Error("REASON_REQUIRED");
+      if (quantityDelta !== 0 && !reason) throw new Error("REASON_REQUIRED");
 
       const updated = await tx.product.update({
         where: { id: productId },
@@ -59,7 +59,7 @@ export async function POST(
         stockBefore: product.stockCount,
         stockAfter: updated.stockCount,
         shiftId: activeShift.id,
-        note: quantityDelta < 0 ? reason! : null,
+        note: quantityDelta !== 0 ? reason! : null,
       });
 
       let finalStockCount = updated.stockCount;
@@ -110,7 +110,7 @@ export async function POST(
     }
     if (err instanceof Error && err.message === "REASON_REQUIRED") {
       return NextResponse.json(
-        { error: "Select a reason for the deduction" },
+        { error: "Select a reason for this change" },
         { status: 400 }
       );
     }

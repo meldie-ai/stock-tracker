@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
 import { notifyStockUpdated } from "@/lib/updateSignal";
 import { formatPrice, centsToInputValue, parsePriceInput } from "@/lib/price";
-import { ADJUST_DEDUCTION_REASONS } from "@/lib/adjustReasons";
+import { ADJUST_DEDUCTION_REASONS, ADJUST_INCREASE_REASONS } from "@/lib/adjustReasons";
 
 const LOW_STOCK_THRESHOLD = 3; // easy to adjust; low-stock = 0 < stockCount <= this
 
@@ -132,9 +132,9 @@ export default function ProductRow({
       setError("Enter a whole number, 0 or more");
       return;
     }
-    const isDeduction = value < stockCount;
-    if (isDeduction && !adjustReason) {
-      setError("Select a reason for the deduction");
+    const isChange = value !== stockCount;
+    if (isChange && !adjustReason) {
+      setError("Select a reason for this change");
       return;
     }
     setError(null);
@@ -146,7 +146,7 @@ export default function ProductRow({
           body: JSON.stringify({
             mode: "set",
             value,
-            ...(isDeduction ? { reason: adjustReason } : {}),
+            ...(isChange ? { reason: adjustReason } : {}),
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -354,7 +354,7 @@ export default function ProductRow({
                 Cancel
               </button>
             </div>
-            {adjustValue !== "" && Number(adjustValue) < stockCount && (
+            {adjustValue !== "" && Number(adjustValue) !== stockCount && (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-zinc-500">Reason</span>
                 <select
@@ -363,7 +363,10 @@ export default function ProductRow({
                   className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-xs"
                 >
                   <option value="">Select a reason&hellip;</option>
-                  {ADJUST_DEDUCTION_REASONS.map((r) => (
+                  {(Number(adjustValue) > stockCount
+                    ? ADJUST_INCREASE_REASONS
+                    : ADJUST_DEDUCTION_REASONS
+                  ).map((r) => (
                     <option key={r} value={r}>
                       {r}
                     </option>
