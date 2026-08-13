@@ -224,14 +224,21 @@ function splitRestockedByRole(
 }
 
 /**
- * Total units restocked (positive Adjust-stock corrections) per product within an arbitrary date
- * range, split by whether an Admin or Staff account made the adjustment. Role is looked up live
- * (not snapshotted at the time of the action), so a promoted/demoted account's older adjustments
- * are grouped under its current role.
+ * Total units restocked (positive Adjust-stock corrections explicitly marked with the "Restock"
+ * reason) per product within an arbitrary date range, split by whether an Admin or Staff account
+ * made the adjustment. Role is looked up live (not snapshotted at the time of the action), so a
+ * promoted/demoted account's older adjustments are grouped under its current role. Increases
+ * saved with a different reason (e.g. "Miscount / correction") are stock corrections, not
+ * restocks, so they're excluded here.
  */
 export async function getRestockedSummary(since: Date, until: Date): Promise<RestockedSummary> {
   const entries = await prisma.auditLog.findMany({
-    where: { action: "ADJUST", quantityDelta: { gt: 0 }, createdAt: { gte: since, lt: until } },
+    where: {
+      action: "ADJUST",
+      quantityDelta: { gt: 0 },
+      note: "Restock",
+      createdAt: { gte: since, lt: until },
+    },
     select: {
       categoryNameSnapshot: true,
       productNameSnapshot: true,
@@ -246,7 +253,7 @@ export async function getRestockedSummary(since: Date, until: Date): Promise<Res
 /** Same admin/staff split as getRestockedSummary, scoped to one shift instead of a date range. */
 export async function getShiftRestockedSummary(shiftId: string): Promise<RestockedSummary> {
   const entries = await prisma.auditLog.findMany({
-    where: { shiftId, action: "ADJUST", quantityDelta: { gt: 0 } },
+    where: { shiftId, action: "ADJUST", quantityDelta: { gt: 0 }, note: "Restock" },
     select: {
       categoryNameSnapshot: true,
       productNameSnapshot: true,
