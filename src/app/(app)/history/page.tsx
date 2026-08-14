@@ -1,18 +1,22 @@
 import Link from "next/link";
-import { getClosedShiftsWithinDays, getShiftsRevenueTotals } from "@/lib/data";
+import { getActiveShift, getClosedShiftsWithinDays, getShiftsRevenueTotals } from "@/lib/data";
 import { dayPartLabel, formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
 import { formatPrice } from "@/lib/price";
 import { getCurrentUser } from "@/lib/session";
 import { SHIFT_RETENTION_DAYS } from "@/lib/retention";
 
 export default async function HistoryPage() {
-  const [shifts, currentUser] = await Promise.all([
+  const [shifts, currentUser, activeShift] = await Promise.all([
     getClosedShiftsWithinDays(SHIFT_RETENTION_DAYS),
     getCurrentUser(),
+    getActiveShift(),
   ]);
   const isAdmin = currentUser?.role === "ADMIN";
   const revenueTotals = isAdmin
-    ? await getShiftsRevenueTotals(shifts.map((s) => s.id))
+    ? await getShiftsRevenueTotals([
+        ...(activeShift ? [activeShift.id] : []),
+        ...shifts.map((s) => s.id),
+      ])
     : null;
 
   return (
@@ -24,7 +28,39 @@ export default async function HistoryPage() {
         Last {SHIFT_RETENTION_DAYS} days of closed shifts. Older shifts are automatically removed.
       </p>
 
-      {shifts.length === 0 ? (
+      {activeShift && (
+        <Link
+          href={`/history/${activeShift.id}`}
+          className="flex touch-manipulation items-center justify-between gap-3 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30 p-4 mb-3 active:bg-blue-100 dark:active:bg-blue-950/50 hover:border-blue-300 dark:hover:border-blue-800"
+          aria-label={`View details for the shift in progress since ${formatDateDDMMYY(activeShift.startedAt)}`}
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+              {formatDateDDMMYY(activeShift.startedAt)} {formatTime12(activeShift.startedAt)}
+              {" – Ongoing"}
+            </p>
+            <p className="text-xs font-bold uppercase text-blue-700 dark:text-blue-400">
+              {dayPartLabel(activeShift.startedAt)} – Ongoing
+            </p>
+            <p className="text-xs text-zinc-500 mt-1">
+              View sold &amp; stock breakdown
+              {revenueTotals?.get(activeShift.id) && (
+                <>
+                  {" · "}
+                  <span className="font-semibold text-red-600 dark:text-red-400">
+                    {formatPrice(revenueTotals.get(activeShift.id)!.totalRevenueCents)} made
+                  </span>
+                </>
+              )}
+            </p>
+          </div>
+          <span className="shrink-0 text-blue-300 dark:text-blue-700" aria-hidden="true">
+            &rsaquo;
+          </span>
+        </Link>
+      )}
+
+      {shifts.length === 0 && !activeShift ? (
         <p className="text-sm text-zinc-500">No closed shifts yet.</p>
       ) : (
         shifts.map((shift) => {

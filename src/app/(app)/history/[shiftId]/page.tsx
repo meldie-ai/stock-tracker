@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  getCategoriesWithProducts,
   getShiftDetail,
   getShiftPaymentBreakdown,
   getShiftRestockedSummary,
@@ -22,9 +23,10 @@ export default async function ShiftDetailPage({
 }) {
   const { shiftId } = await params;
   const [shift, currentUser] = await Promise.all([getShiftDetail(shiftId), getCurrentUser()]);
-  if (!shift || shift.status !== "CLOSED" || !shift.endedAt) {
+  if (!shift) {
     notFound();
   }
+  const isActive = shift.status === "ACTIVE";
   const isAdmin = currentUser?.role === "ADMIN";
 
   const soldCategories = groupByCategory(
@@ -38,13 +40,24 @@ export default async function ShiftDetailPage({
       }))
     )
   );
-  const stockCategories = groupByCategory(
-    shift.stockSnapshots.map((s) => ({
-      categoryNameSnapshot: s.categoryNameSnapshot,
-      productNameSnapshot: s.productNameSnapshot,
-      value: s.stockCountAtClose,
-    }))
-  );
+  // A shift still in progress has no close-time snapshot yet — fall back to live stock counts.
+  const stockCategories = isActive
+    ? groupByCategory(
+        (await getCategoriesWithProducts()).flatMap((category) =>
+          category.products.map((product) => ({
+            categoryNameSnapshot: category.name,
+            productNameSnapshot: product.name,
+            value: product.stockCount,
+          }))
+        )
+      )
+    : groupByCategory(
+        shift.stockSnapshots.map((s) => ({
+          categoryNameSnapshot: s.categoryNameSnapshot,
+          productNameSnapshot: s.productNameSnapshot,
+          value: s.stockCountAtClose,
+        }))
+      );
   const restocked = await getShiftRestockedSummary(shift.id);
   const restockedByAdmin = groupByCategory(restocked.admin);
   const restockedByStaff = groupByCategory(restocked.staff);
@@ -54,10 +67,16 @@ export default async function ShiftDetailPage({
     ? await Promise.all([getShiftRevenueSummary(shift.id), getShiftPaymentBreakdown(shift.id)])
     : [null, null];
 
-  const dateRangeLabel = `${formatDateDDMMYY(shift.startedAt)} ${formatTime12(shift.startedAt)} – ${formatDateDDMMYY(shift.endedAt)} ${formatTime12(shift.endedAt)}`;
+  const dateRangeLabel = shift.endedAt
+    ? `${formatDateDDMMYY(shift.startedAt)} ${formatTime12(shift.startedAt)} – ${formatDateDDMMYY(shift.endedAt)} ${formatTime12(shift.endedAt)}`
+    : `${formatDateDDMMYY(shift.startedAt)} ${formatTime12(shift.startedAt)} – Ongoing`;
   const startDayPart = dayPartLabel(shift.startedAt);
-  const endDayPart = dayPartLabel(shift.endedAt);
-  const dayPartRangeLabel = startDayPart === endDayPart ? startDayPart : `${startDayPart} – ${endDayPart}`;
+  const endDayPart = shift.endedAt ? dayPartLabel(shift.endedAt) : null;
+  const dayPartRangeLabel = !endDayPart
+    ? `${startDayPart} – Ongoing`
+    : startDayPart === endDayPart
+      ? startDayPart
+      : `${startDayPart} – ${endDayPart}`;
 
   return (
     <div>
