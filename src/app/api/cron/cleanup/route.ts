@@ -7,8 +7,14 @@ import { SHIFT_RETENTION_DAYS, AUDIT_LOG_RETENTION_DAYS } from "@/lib/retention"
 // month; anything older is removed automatically so storage doesn't grow unbounded.
 
 export async function GET(request: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET;
+  // Fail closed if the secret isn't configured at all, rather than matching
+  // the literal string "Bearer undefined" against whatever the caller sends.
+  if (!cronSecret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
