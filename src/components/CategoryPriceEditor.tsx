@@ -34,6 +34,32 @@ export default function CategoryPriceEditor({
   const hasPrice = cashPriceCents !== null || cardPriceCents !== null;
   const hasDeal = dealQuantity !== null && dealPriceCents !== null;
 
+  function handleUseIndividual() {
+    setError(null);
+    startTransition(async () => {
+      try {
+        const res = await fetchWithTimeout(`/api/categories/${categoryId}/price`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cashPriceCents: null,
+            cardPriceCents: null,
+            dealQuantity: null,
+            dealPriceCents: null,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(data.error ?? "Failed to update price");
+          return;
+        }
+        router.refresh();
+      } catch (err) {
+        setError(describeFetchError(err));
+      }
+    });
+  }
+
   function handleSave() {
     const cash = parsePriceInput(cashPriceValue);
     const card = parsePriceInput(cardPriceValue);
@@ -109,18 +135,41 @@ export default function CategoryPriceEditor({
         </p>
       )}
       {!isShiftOwner ? null : !open ? (
-        <button
-          onClick={() => {
-            setCashPriceValue(centsToInputValue(cashPriceCents));
-            setCardPriceValue(centsToInputValue(cardPriceCents));
-            setDealQuantityValue(dealQuantity !== null ? String(dealQuantity) : "");
-            setDealPriceValue(centsToInputValue(dealPriceCents));
-            setOpen(true);
-          }}
-          className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-        >
-          {hasPrice ? "Edit category price & deal" : "Set one price for this whole category"}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-zinc-500">Price</span>
+          <div className="inline-flex overflow-hidden rounded-md border border-zinc-300 dark:border-zinc-700">
+            <button
+              onClick={() => {
+                setCashPriceValue(centsToInputValue(cashPriceCents));
+                setCardPriceValue(centsToInputValue(cardPriceCents));
+                setDealQuantityValue(dealQuantity !== null ? String(dealQuantity) : "");
+                setDealPriceValue(centsToInputValue(dealPriceCents));
+                setOpen(true);
+              }}
+              disabled={isPending}
+              className={`px-2 py-1 text-xs font-medium disabled:opacity-50 ${
+                hasPrice
+                  ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                  : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              }`}
+            >
+              Category
+            </button>
+            <button
+              onClick={() => {
+                if (hasPrice) handleUseIndividual();
+              }}
+              disabled={isPending}
+              className={`border-l border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium disabled:opacity-50 ${
+                !hasPrice
+                  ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                  : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              }`}
+            >
+              Individual
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-zinc-500">Cash $</span>

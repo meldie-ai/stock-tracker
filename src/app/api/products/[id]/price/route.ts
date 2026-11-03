@@ -24,8 +24,7 @@ export async function POST(
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid price or deal note" }, { status: 400 });
   }
-  const { cashPriceCents, cardPriceCents, dealNote, dealQuantity, dealPriceCents, overridesCategoryPrice } =
-    parsed.data;
+  const { cashPriceCents, cardPriceCents, dealNote, dealQuantity, dealPriceCents } = parsed.data;
 
   const existing = await prisma.product.findUnique({ where: { id: productId } });
   if (!existing) {
@@ -55,7 +54,6 @@ export async function POST(
         ...(dealNote !== undefined && { dealNote: dealNote || null }),
         ...(dealQuantity !== undefined && { dealQuantity }),
         ...(dealPriceCents !== undefined && { dealPriceCents }),
-        ...(overridesCategoryPrice !== undefined && { overridesCategoryPrice }),
       },
     });
 
@@ -91,6 +89,5 @@ export async function POST(
     dealNote: result.dealNote,
     dealQuantity: result.dealQuantity,
     dealPriceCents: result.dealPriceCents,
-    overridesCategoryPrice: result.overridesCategoryPrice,
   });
 }

@@ -22,7 +22,6 @@ export default function ProductRow({
   dealQuantity,
   dealPriceCents,
   categoryHasPrice,
-  overridesCategoryPrice,
   onAddToDeal,
   dealCartQuantity = 0,
 }: {
@@ -38,14 +37,12 @@ export default function ProductRow({
   dealQuantity: number | null;
   dealPriceCents: number | null;
   categoryHasPrice: boolean;
-  overridesCategoryPrice: boolean;
   onAddToDeal?: (quantity: number) => void;
   dealCartQuantity?: number;
 }) {
-  // Whether this row's own price/deal fields are the ones actually charged —
-  // true when the category has no price of its own, or when this product has
-  // explicitly opted to override it. Mirrors lib/pricing.ts's usesCategoryPrice.
-  const usingOwnPrice = !categoryHasPrice || overridesCategoryPrice;
+  // This row's own price/deal only applies when the category has none of its
+  // own — a category price always takes over for every product in it.
+  const usingOwnPrice = !categoryHasPrice;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [sellQty, setSellQty] = useState("1");
@@ -202,9 +199,6 @@ export default function ProductRow({
             cardPriceCents: card,
             dealQuantity: dealQty,
             dealPriceCents: dealPrice,
-            // Saving this product's own price only means something when the
-            // category has one too — that's what makes it an override.
-            overridesCategoryPrice: categoryHasPrice,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -213,27 +207,6 @@ export default function ProductRow({
           return;
         }
         setPriceOpen(false);
-        router.refresh();
-      } catch (err) {
-        setError(describeFetchError(err));
-      }
-    });
-  }
-
-  function handleUseCategoryPrice() {
-    setError(null);
-    startTransition(async () => {
-      try {
-        const res = await fetchWithTimeout(`/api/products/${productId}/price`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ overridesCategoryPrice: false }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          setError(data.error ?? "Failed to update price");
-          return;
-        }
         router.refresh();
       } catch (err) {
         setError(describeFetchError(err));
@@ -409,59 +382,21 @@ export default function ProductRow({
       </div>
       )}
 
-      {isShiftOwner && (
+      {!categoryHasPrice && isShiftOwner && (
         <div className="mt-1">
           {!priceOpen ? (
-            categoryHasPrice ? (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-zinc-500">Price</span>
-                <div className="inline-flex overflow-hidden rounded-md border border-zinc-300 dark:border-zinc-700">
-                  <button
-                    onClick={() => {
-                      if (overridesCategoryPrice) handleUseCategoryPrice();
-                    }}
-                    disabled={isPending}
-                    className={`px-2 py-1 text-xs font-medium disabled:opacity-50 ${
-                      !overridesCategoryPrice
-                        ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
-                        : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                    }`}
-                  >
-                    Category
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCashPriceValue(centsToInputValue(cashPriceCents));
-                      setCardPriceValue(centsToInputValue(cardPriceCents));
-                      setDealQuantityValue(dealQuantity !== null ? String(dealQuantity) : "");
-                      setDealPriceValue(centsToInputValue(dealPriceCents));
-                      setPriceOpen(true);
-                    }}
-                    disabled={isPending}
-                    className={`border-l border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium disabled:opacity-50 ${
-                      overridesCategoryPrice
-                        ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
-                        : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                    }`}
-                  >
-                    Individual
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  setCashPriceValue(centsToInputValue(cashPriceCents));
-                  setCardPriceValue(centsToInputValue(cardPriceCents));
-                  setDealQuantityValue(dealQuantity !== null ? String(dealQuantity) : "");
-                  setDealPriceValue(centsToInputValue(dealPriceCents));
-                  setPriceOpen(true);
-                }}
-                className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-              >
-                Edit price &amp; deal
-              </button>
-            )
+            <button
+              onClick={() => {
+                setCashPriceValue(centsToInputValue(cashPriceCents));
+                setCardPriceValue(centsToInputValue(cardPriceCents));
+                setDealQuantityValue(dealQuantity !== null ? String(dealQuantity) : "");
+                setDealPriceValue(centsToInputValue(dealPriceCents));
+                setPriceOpen(true);
+              }}
+              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            >
+              Edit price &amp; deal
+            </button>
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
               <span className="text-xs text-zinc-500">Cash $</span>

@@ -10,7 +10,6 @@ type Product = {
   dealNote: string | null;
   dealQuantity: number | null;
   dealPriceCents: number | null;
-  overridesCategoryPrice: boolean;
 };
 
 export default function CategorySection({

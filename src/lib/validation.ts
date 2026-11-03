@@ -54,9 +54,6 @@ export const priceSchema = z.object({
   dealNote: z.string().trim().max(60).nullable().optional(),
   dealQuantity: z.number().int().positive().max(1000).nullable().optional(),
   dealPriceCents: z.number().int().min(0).max(1_000_000).nullable().optional(),
-  // Product price only: whether this product's own price/deal should be used
-  // instead of its category's. No effect on the category price route itself.
-  overridesCategoryPrice: z.boolean().optional(),
 });
 
 export const shiftNoteSchema = z.object({
