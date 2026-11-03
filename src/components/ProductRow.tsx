@@ -221,7 +221,6 @@ export default function ProductRow({
   }
 
   function handleUseCategoryPrice() {
-    if (!confirm("Switch this product back to the category price?")) return;
     setError(null);
     startTransition(async () => {
       try {
@@ -413,7 +412,43 @@ export default function ProductRow({
       {isShiftOwner && (
         <div className="mt-1">
           {!priceOpen ? (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            categoryHasPrice ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-zinc-500">Price</span>
+                <div className="inline-flex overflow-hidden rounded-md border border-zinc-300 dark:border-zinc-700">
+                  <button
+                    onClick={() => {
+                      if (overridesCategoryPrice) handleUseCategoryPrice();
+                    }}
+                    disabled={isPending}
+                    className={`px-2 py-1 text-xs font-medium disabled:opacity-50 ${
+                      !overridesCategoryPrice
+                        ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                        : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    Category
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCashPriceValue(centsToInputValue(cashPriceCents));
+                      setCardPriceValue(centsToInputValue(cardPriceCents));
+                      setDealQuantityValue(dealQuantity !== null ? String(dealQuantity) : "");
+                      setDealPriceValue(centsToInputValue(dealPriceCents));
+                      setPriceOpen(true);
+                    }}
+                    disabled={isPending}
+                    className={`border-l border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium disabled:opacity-50 ${
+                      overridesCategoryPrice
+                        ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                        : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                    }`}
+                  >
+                    Individual
+                  </button>
+                </div>
+              </div>
+            ) : (
               <button
                 onClick={() => {
                   setCashPriceValue(centsToInputValue(cashPriceCents));
@@ -424,20 +459,9 @@ export default function ProductRow({
                 }}
                 className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
               >
-                {categoryHasPrice && !overridesCategoryPrice
-                  ? "Override price for this product"
-                  : "Edit price & deal"}
+                Edit price &amp; deal
               </button>
-              {categoryHasPrice && overridesCategoryPrice && (
-                <button
-                  onClick={handleUseCategoryPrice}
-                  disabled={isPending}
-                  className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50"
-                >
-                  Use category price instead
-                </button>
-              )}
-            </div>
+            )
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
               <span className="text-xs text-zinc-500">Cash $</span>
