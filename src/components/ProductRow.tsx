@@ -329,7 +329,7 @@ export default function ProductRow({
               setAdjustValue(String(stockCount));
               setAdjustOpen(true);
             }}
-            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
           >
             Adjust stock (restock/correction)
           </button>
