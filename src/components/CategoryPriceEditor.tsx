@@ -44,6 +44,7 @@ export default function CategoryPriceEditor({
           body: JSON.stringify({
             cashPriceCents: null,
             cardPriceCents: null,
+            dealNote: null,
             dealQuantity: null,
             dealPriceCents: null,
           }),
@@ -90,6 +91,10 @@ export default function CategoryPriceEditor({
           body: JSON.stringify({
             cashPriceCents: cash,
             cardPriceCents: card,
+            // This form has no field to set a dealNote, and a structured deal
+            // (or none) always supersedes it — clear it on every save so an
+            // old note can't linger behind a cleared or changed deal.
+            dealNote: null,
             dealQuantity: dealQty,
             dealPriceCents: dealPrice,
           }),
