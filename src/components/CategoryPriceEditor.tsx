@@ -212,6 +212,17 @@ export default function CategoryPriceEditor({
             onChange={(e) => setDealPriceValue(e.target.value)}
             className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
           />
+          {(dealQuantityValue !== "" || dealPriceValue !== "") && (
+            <button
+              onClick={() => {
+                setDealQuantityValue("");
+                setDealPriceValue("");
+              }}
+              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            >
+              No deal
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={isPending}
