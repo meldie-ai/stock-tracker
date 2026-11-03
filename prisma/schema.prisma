@@ -94,6 +94,12 @@ model Product {
   // combine into one sale. Ignored when the category has its own deal set.
   dealQuantity   Int?
   dealPriceCents Int?
+  // When the category has its own price, every product in it uses that instead
+  // of its individual price (see lib/pricing.ts) — unless this is true, which
+  // is an explicit per-product exception to charge this product's own
+  // cash/card price and deal instead. Has no effect when the category has no
+  // price of its own.
+  overridesCategoryPrice Boolean  @default(false)
   sortOrder      Int      @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

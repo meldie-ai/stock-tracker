@@ -21,7 +21,8 @@ export default function ProductRow({
   dealNote,
   dealQuantity,
   dealPriceCents,
-  showPriceEditor = true,
+  categoryHasPrice,
+  overridesCategoryPrice,
   onAddToDeal,
   dealCartQuantity = 0,
 }: {
@@ -36,10 +37,15 @@ export default function ProductRow({
   dealNote: string | null;
   dealQuantity: number | null;
   dealPriceCents: number | null;
-  showPriceEditor?: boolean;
+  categoryHasPrice: boolean;
+  overridesCategoryPrice: boolean;
   onAddToDeal?: (quantity: number) => void;
   dealCartQuantity?: number;
 }) {
+  // Whether this row's own price/deal fields are the ones actually charged —
+  // true when the category has no price of its own, or when this product has
+  // explicitly opted to override it. Mirrors lib/pricing.ts's usesCategoryPrice.
+  const usingOwnPrice = !categoryHasPrice || overridesCategoryPrice;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [sellQty, setSellQty] = useState("1");
@@ -196,6 +202,9 @@ export default function ProductRow({
             cardPriceCents: card,
             dealQuantity: dealQty,
             dealPriceCents: dealPrice,
+            // Saving this product's own price only means something when the
+            // category has one too — that's what makes it an override.
+            overridesCategoryPrice: categoryHasPrice,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -204,6 +213,28 @@ export default function ProductRow({
           return;
         }
         setPriceOpen(false);
+        router.refresh();
+      } catch (err) {
+        setError(describeFetchError(err));
+      }
+    });
+  }
+
+  function handleUseCategoryPrice() {
+    if (!confirm("Switch this product back to the category price?")) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        const res = await fetchWithTimeout(`/api/products/${productId}/price`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ overridesCategoryPrice: false }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(data.error ?? "Failed to update price");
+          return;
+        }
         router.refresh();
       } catch (err) {
         setError(describeFetchError(err));
@@ -231,7 +262,7 @@ export default function ProductRow({
                 · Sold this shift: <span className="font-semibold">{soldCount ?? 0}</span>
               </>
             )}
-            {showPriceEditor && cashPriceCents !== null && (
+            {usingOwnPrice && cashPriceCents !== null && (
               <>
                 {" · "}
                 <span className="font-semibold text-red-600 dark:text-red-400">
@@ -239,7 +270,7 @@ export default function ProductRow({
                 </span>
               </>
             )}
-            {showPriceEditor && cardPriceCents !== null && (
+            {usingOwnPrice && cardPriceCents !== null && (
               <>
                 {" · "}
                 <span className="font-semibold text-red-600 dark:text-red-400">
@@ -247,7 +278,7 @@ export default function ProductRow({
                 </span>
               </>
             )}
-            {showPriceEditor && dealQuantity !== null && dealPriceCents !== null ? (
+            {usingOwnPrice && dealQuantity !== null && dealPriceCents !== null ? (
               <>
                 {" · "}
                 <span className="font-semibold text-red-600 dark:text-red-400">
@@ -255,7 +286,7 @@ export default function ProductRow({
                 </span>
               </>
             ) : (
-              showPriceEditor && dealNote && <> · {dealNote}</>
+              usingOwnPrice && dealNote && <> · {dealNote}</>
             )}
           </p>
         </div>
@@ -379,21 +410,34 @@ export default function ProductRow({
       </div>
       )}
 
-      {showPriceEditor && isShiftOwner && (
+      {isShiftOwner && (
         <div className="mt-1">
           {!priceOpen ? (
-            <button
-              onClick={() => {
-                setCashPriceValue(centsToInputValue(cashPriceCents));
-                setCardPriceValue(centsToInputValue(cardPriceCents));
-                setDealQuantityValue(dealQuantity !== null ? String(dealQuantity) : "");
-                setDealPriceValue(centsToInputValue(dealPriceCents));
-                setPriceOpen(true);
-              }}
-              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-            >
-              Edit price &amp; deal
-            </button>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <button
+                onClick={() => {
+                  setCashPriceValue(centsToInputValue(cashPriceCents));
+                  setCardPriceValue(centsToInputValue(cardPriceCents));
+                  setDealQuantityValue(dealQuantity !== null ? String(dealQuantity) : "");
+                  setDealPriceValue(centsToInputValue(dealPriceCents));
+                  setPriceOpen(true);
+                }}
+                className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              >
+                {categoryHasPrice && !overridesCategoryPrice
+                  ? "Override price for this product"
+                  : "Edit price & deal"}
+              </button>
+              {categoryHasPrice && overridesCategoryPrice && (
+                <button
+                  onClick={handleUseCategoryPrice}
+                  disabled={isPending}
+                  className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50"
+                >
+                  Use category price instead
+                </button>
+              )}
+            </div>
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
               <span className="text-xs text-zinc-500">Cash $</span>

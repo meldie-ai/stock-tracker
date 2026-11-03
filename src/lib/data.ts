@@ -306,6 +306,7 @@ export async function getRevenueSummaryForTimeRange(since: Date, until: Date) {
         select: {
           cashPriceCents: true,
           cardPriceCents: true,
+          overridesCategoryPrice: true,
           category: { select: { cashPriceCents: true, cardPriceCents: true } },
         },
       },

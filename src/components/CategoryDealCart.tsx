@@ -17,6 +17,7 @@ type Product = {
   dealNote: string | null;
   dealQuantity: number | null;
   dealPriceCents: number | null;
+  overridesCategoryPrice: boolean;
 };
 
 type Deal = { dealQuantity: number; dealPriceCents: number };
@@ -135,7 +136,8 @@ export default function CategoryDealCart({
               dealNote={product.dealNote}
               dealQuantity={product.dealQuantity}
               dealPriceCents={product.dealPriceCents}
-              showPriceEditor={!hasCategoryPrice}
+              categoryHasPrice={hasCategoryPrice}
+              overridesCategoryPrice={product.overridesCategoryPrice}
               onAddToDeal={dealMatchesCart ? (quantity) => addToCart(product, quantity) : undefined}
               dealCartQuantity={staged.get(product.id) ?? 0}
             />
