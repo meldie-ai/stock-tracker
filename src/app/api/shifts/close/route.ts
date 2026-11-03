@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedRequest } from "@/lib/apiHelpers";
+import { closeActiveShift } from "@/lib/shiftClose";
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuthenticatedRequest(request);
@@ -11,61 +12,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No active shift" }, { status: 409 });
   }
 
-  const endedAt = new Date();
-
-  const [products, existingSales] = await Promise.all([
-    prisma.product.findMany({ include: { category: true } }),
-    prisma.shiftSale.findMany({
-      where: { shiftId: activeShift.id },
-      select: { productId: true },
-    }),
-  ]);
-  const existingSaleProductIds = new Set(existingSales.map((s) => s.productId));
-  // Ensure every current product has a sale row (defaults to 0) so the
-  // historical "sold" list is complete, matching the stock snapshot below.
-  const missingSaleProducts = products.filter((p) => !existingSaleProductIds.has(p.id));
-
   try {
-    const closedShift = await prisma.$transaction(
-      async (tx) => {
-        if (missingSaleProducts.length > 0) {
-          await tx.shiftSale.createMany({
-            data: missingSaleProducts.map((product) => ({
-              shiftId: activeShift.id,
-              productId: product.id,
-              productNameSnapshot: product.name,
-              categoryNameSnapshot: product.category.name,
-              categorySortOrder: product.category.sortOrder,
-              sortOrder: product.sortOrder,
-              soldCount: 0,
-            })),
-          });
-        }
-
-        await tx.shiftStockSnapshot.createMany({
-          data: products.map((product) => ({
-            shiftId: activeShift.id,
-            productId: product.id,
-            productNameSnapshot: product.name,
-            categoryNameSnapshot: product.category.name,
-            categorySortOrder: product.category.sortOrder,
-            sortOrder: product.sortOrder,
-            stockCountAtClose: product.stockCount,
-          })),
-        });
-
-        return tx.shift.update({
-          where: { id: activeShift.id },
-          data: {
-            status: "CLOSED",
-            endedAt,
-            endedByUserId: auth.user.userId,
-          },
-        });
-      },
-      { timeout: 15000 }
-    );
-
+    const closedShift = await closeActiveShift(activeShift.id, auth.user.userId);
     return NextResponse.json(closedShift);
   } catch (err) {
     console.error("Failed to close shift", err);
