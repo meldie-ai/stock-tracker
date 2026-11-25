@@ -1,18 +1,13 @@
 import { getAuditLog } from "@/lib/data";
 import { formatDateDDMMYY, formatTime12 } from "@/lib/dateFormat";
 import { AUDIT_LOG_RETENTION_DAYS } from "@/lib/retention";
-import type { AuditAction } from "@/generated/prisma/client";
-
-const ACTION_LABELS: Partial<Record<AuditAction, string>> = {
-  UNDO_SALE: "UNDO",
-};
 
 export default async function AuditPage() {
   const entries = await getAuditLog({});
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Audit log</h1>
+      <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-1">Activity log</h1>
       <p className="text-sm text-zinc-500 mb-4">
         Last {AUDIT_LOG_RETENTION_DAYS} days of stock changes. Older entries are automatically removed.
       </p>
@@ -35,7 +30,7 @@ export default async function AuditPage() {
                 </span>
               </div>
               <p className="text-xs text-zinc-500 mt-1">
-                {ACTION_LABELS[entry.action] ?? entry.action} by {entry.usernameSnapshot} ·{" "}
+                {entry.action} by {entry.usernameSnapshot} ·{" "}
                 {entry.stockBefore} &rarr;{" "}
                 {entry.stockAfter}
                 {entry.note ? ` · ${entry.note}` : ""}

@@ -22,6 +22,7 @@ export default function ProductRow({
   dealQuantity,
   dealPriceCents,
   categoryHasPrice,
+  undoableAction,
   onAddToDeal,
   dealCartQuantity = 0,
 }: {
@@ -37,6 +38,7 @@ export default function ProductRow({
   dealQuantity: number | null;
   dealPriceCents: number | null;
   categoryHasPrice: boolean;
+  undoableAction: "SELL" | "ADJUST" | null;
   onAddToDeal?: (quantity: number) => void;
   dealCartQuantity?: number;
 }) {
@@ -108,17 +110,19 @@ export default function ProductRow({
     setSellQty("1");
   }
 
-  function handleUndoLastSale() {
-    if (!confirm("Undo the last sale of this product?")) return;
+  function handleUndo() {
+    const prompt =
+      undoableAction === "ADJUST" ? "Undo the last stock adjustment?" : "Undo the last sale of this product?";
+    if (!confirm(prompt)) return;
     setError(null);
     startTransition(async () => {
       try {
-        const res = await fetchWithTimeout(`/api/products/${productId}/undo-last-sale`, {
+        const res = await fetchWithTimeout(`/api/products/${productId}/undo-last-change`, {
           method: "POST",
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          setError(data.error ?? "Failed to undo sale");
+          setError(data.error ?? "Failed to undo");
           return;
         }
         notifyStockUpdated();
@@ -309,14 +313,14 @@ export default function ProductRow({
         </div>
       )}
 
-      {hasActiveShift && isShiftOwner && (soldCount ?? 0) > 0 && (
+      {hasActiveShift && isShiftOwner && undoableAction && (
         <div className="mt-1">
           <button
-            onClick={handleUndoLastSale}
+            onClick={handleUndo}
             disabled={isPending}
-            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50"
+            className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
           >
-            Undo last sale
+            {undoableAction === "ADJUST" ? "Undo last adjustment" : "Undo last sale"}
           </button>
         </div>
       )}

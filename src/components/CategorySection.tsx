@@ -22,6 +22,7 @@ export default function CategorySection({
   categoryDealPriceCents,
   products,
   soldByProductId,
+  undoableActionByProductId,
   hasActiveShift,
   isShiftOwner,
 }: {
@@ -34,6 +35,7 @@ export default function CategorySection({
   categoryDealPriceCents: number | null;
   products: Product[];
   soldByProductId: Map<string, number>;
+  undoableActionByProductId: Map<string, "SELL" | "ADJUST">;
   hasActiveShift: boolean;
   isShiftOwner: boolean;
 }) {
@@ -58,6 +60,7 @@ export default function CategorySection({
         categoryDealPriceCents={categoryDealPriceCents}
         products={products}
         soldByProductId={soldByProductId}
+        undoableActionByProductId={undoableActionByProductId}
         hasActiveShift={hasActiveShift}
         isShiftOwner={isShiftOwner}
       />

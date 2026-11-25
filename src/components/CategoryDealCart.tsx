@@ -28,6 +28,7 @@ export default function CategoryDealCart({
   categoryDealPriceCents,
   products,
   soldByProductId,
+  undoableActionByProductId,
   hasActiveShift,
   isShiftOwner,
 }: {
@@ -37,6 +38,7 @@ export default function CategoryDealCart({
   categoryDealPriceCents: number | null;
   products: Product[];
   soldByProductId: Map<string, number>;
+  undoableActionByProductId: Map<string, "SELL" | "ADJUST">;
   hasActiveShift: boolean;
   isShiftOwner: boolean;
 }) {
@@ -136,6 +138,7 @@ export default function CategoryDealCart({
               dealQuantity={product.dealQuantity}
               dealPriceCents={product.dealPriceCents}
               categoryHasPrice={hasCategoryPrice}
+              undoableAction={undoableActionByProductId.get(product.id) ?? null}
               onAddToDeal={dealMatchesCart ? (quantity) => addToCart(product, quantity) : undefined}
               dealCartQuantity={staged.get(product.id) ?? 0}
             />

@@ -1,4 +1,9 @@
-import { getActiveShift, getCategoriesWithProducts, sumSoldByProductId } from "@/lib/data";
+import {
+  getActiveShift,
+  getCategoriesWithProducts,
+  getLastActionByProductId,
+  sumSoldByProductId,
+} from "@/lib/data";
 import { formatTime12, formatDateDDMMYY } from "@/lib/dateFormat";
 import { getCurrentUser } from "@/lib/session";
 import ShiftControls from "@/components/ShiftControls";
@@ -22,6 +27,27 @@ export default async function DashboardPage() {
 
   const soldByProductId = activeShift ? sumSoldByProductId(activeShift.sales) : new Map<string, number>();
 
+  // Which products currently have something undoable, and what kind — only when the
+  // literal last thing that happened to that product this shift was a plain Cash/Card
+  // sell or a stock adjustment, and it isn't a carton-linked product (undoing those would
+  // also need to reverse whatever cascade they triggered, which isn't supported).
+  const lastActionByProductId = activeShift
+    ? await getLastActionByProductId(activeShift.id)
+    : new Map<string, { action: string; note: string | null }>();
+  const undoableActionByProductId = new Map<string, "SELL" | "ADJUST">();
+  for (const category of categories) {
+    for (const product of category.products) {
+      if (product.linkedCartonProductId) continue;
+      const last = lastActionByProductId.get(product.id);
+      if (!last) continue;
+      if (last.action === "SELL" && (last.note === "Cash sale" || last.note === "Card sale")) {
+        undoableActionByProductId.set(product.id, "SELL");
+      } else if (last.action === "ADJUST") {
+        undoableActionByProductId.set(product.id, "ADJUST");
+      }
+    }
+  }
+
   const startedAtLabel = activeShift
     ? `${formatDateDDMMYY(activeShift.startedAt)} ${formatTime12(activeShift.startedAt)}`
     : null;
@@ -44,7 +70,7 @@ export default async function DashboardPage() {
 
       {categories.length === 0 ? (
         <p className="text-sm text-zinc-500">
-          No categories yet. Head to Manage to add your first category and products.
+          No categories yet. Head to Products &amp; Categories to add your first category and products.
         </p>
       ) : (
         <TabSwitcher
@@ -62,6 +88,7 @@ export default async function DashboardPage() {
               categoryDealPriceCents={category.dealPriceCents}
               products={category.products}
               soldByProductId={soldByProductId}
+              undoableActionByProductId={undoableActionByProductId}
               hasActiveShift={!!activeShift}
               isShiftOwner={isShiftOwner}
             />

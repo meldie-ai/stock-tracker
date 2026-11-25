@@ -28,6 +28,27 @@ export async function getActiveShift() {
   });
 }
 
+/**
+ * The single most recent AuditLog entry per product within a shift, used to decide whether
+ * "Undo" should show for that product right now. Only the literal last thing that happened to
+ * a product counts — e.g. a sell followed by a price change is no longer undoable as a sell.
+ */
+export async function getLastActionByProductId(
+  shiftId: string
+): Promise<Map<string, { action: string; note: string | null }>> {
+  const entries = await prisma.auditLog.findMany({
+    where: { shiftId, productId: { not: null } },
+    orderBy: { createdAt: "desc" },
+    select: { productId: true, action: true, note: true },
+  });
+  const byProductId = new Map<string, { action: string; note: string | null }>();
+  for (const entry of entries) {
+    if (!entry.productId || byProductId.has(entry.productId)) continue;
+    byProductId.set(entry.productId, { action: entry.action, note: entry.note });
+  }
+  return byProductId;
+}
+
 /** Maps the live catalog + this shift's sale counts into text-template shape for SOLD or STOCK. */
 export function categoriesForActiveShift(
   categoriesWithProducts: Awaited<ReturnType<typeof getCategoriesWithProducts>>,
