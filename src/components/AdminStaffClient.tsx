@@ -17,13 +17,18 @@ export default function AdminStaffClient({ users }: { users: StaffUser[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [resetPasswordFor, setResetPasswordFor] = useState<string | null>(null);
   const [resetPasswordValue, setResetPasswordValue] = useState("");
 
-  function run(action: () => Promise<Response>) {
+  function run(
+    action: () => Promise<Response>,
+    options?: { successMessage: string; onSuccess?: () => void }
+  ) {
     setError(null);
+    setSuccess(null);
     startTransition(async () => {
       try {
         const res = await action();
@@ -32,6 +37,8 @@ export default function AdminStaffClient({ users }: { users: StaffUser[] }) {
           setError(data.error ?? "Something went wrong");
           return;
         }
+        options?.onSuccess?.();
+        if (options) setSuccess(options.successMessage);
         router.refresh();
       } catch (err) {
         setError(describeFetchError(err));
@@ -40,16 +47,23 @@ export default function AdminStaffClient({ users }: { users: StaffUser[] }) {
   }
 
   function createStaff() {
-    if (!newUsername.trim() || !newPassword) return;
-    run(() =>
-      fetchWithTimeout("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: newUsername.trim(), password: newPassword }),
-      })
+    const username = newUsername.trim();
+    if (!username || !newPassword) return;
+    run(
+      () =>
+        fetchWithTimeout("/api/admin/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password: newPassword }),
+        }),
+      {
+        successMessage: `Account "${username}" created`,
+        onSuccess: () => {
+          setNewUsername("");
+          setNewPassword("");
+        },
+      }
     );
-    setNewUsername("");
-    setNewPassword("");
   }
 
   function deactivate(id: string) {
@@ -60,24 +74,34 @@ export default function AdminStaffClient({ users }: { users: StaffUser[] }) {
     ) {
       return;
     }
-    run(() => fetchWithTimeout(`/api/admin/users/${id}/deactivate`, { method: "POST" }));
+    run(() => fetchWithTimeout(`/api/admin/users/${id}/deactivate`, { method: "POST" }), {
+      successMessage: "Account deactivated",
+    });
   }
 
   function reactivate(id: string) {
-    run(() => fetchWithTimeout(`/api/admin/users/${id}/reactivate`, { method: "POST" }));
+    run(() => fetchWithTimeout(`/api/admin/users/${id}/reactivate`, { method: "POST" }), {
+      successMessage: "Account reactivated",
+    });
   }
 
   function submitResetPassword(id: string) {
     if (!resetPasswordValue) return;
-    run(() =>
-      fetchWithTimeout(`/api/admin/users/${id}/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: resetPasswordValue }),
-      })
+    run(
+      () =>
+        fetchWithTimeout(`/api/admin/users/${id}/reset-password`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: resetPasswordValue }),
+        }),
+      {
+        successMessage: "Password reset",
+        onSuccess: () => {
+          setResetPasswordFor(null);
+          setResetPasswordValue("");
+        },
+      }
     );
-    setResetPasswordFor(null);
-    setResetPasswordValue("");
   }
 
   return (
@@ -109,6 +133,7 @@ export default function AdminStaffClient({ users }: { users: StaffUser[] }) {
       </section>
 
       {error && <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {success && <p className="mb-4 text-sm text-green-600 dark:text-green-400">{success}</p>}
 
       {users.map((user) => (
         <section

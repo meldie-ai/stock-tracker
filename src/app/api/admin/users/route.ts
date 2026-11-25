@@ -11,7 +11,11 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const parsed = createStaffSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid username or password" }, { status: 400 });
+    const passwordInvalid = parsed.error.issues.some((issue) => issue.path[0] === "password");
+    return NextResponse.json(
+      { error: passwordInvalid ? "Password must be at least 8 characters" : "Enter a username" },
+      { status: 400 }
+    );
   }
 
   // Stored exactly as typed so it displays the way the admin intended (e.g. "Minsel@kp").
