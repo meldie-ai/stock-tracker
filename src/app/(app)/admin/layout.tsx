@@ -23,7 +23,7 @@ export default async function AdminLayout({
           href="/audit"
           className="touch-manipulation rounded-md px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 active:bg-black/10 hover:bg-black/5 dark:active:bg-zinc-800 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-50"
         >
-          Audit Log
+          Activity Log
         </Link>
         <Link
           href="/admin/reports"

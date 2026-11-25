@@ -9,12 +9,12 @@ import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
 import type { Role } from "@/generated/prisma/client";
 
 const links = [
-  { href: "/", label: "Dashboard" },
+  { href: "/", label: "Sell" },
   { href: "/stock-count", label: "Stock Count" },
   { href: "/products-sold", label: "Products Sold" },
-  { href: "/manage", label: "Manage" },
+  { href: "/manage", label: "Products & Categories" },
   { href: "/history", label: "Shift History" },
-  { href: "/audit", label: "Audit Log" },
+  { href: "/audit", label: "Activity Log" },
 ];
 
 const adminLinks = [
