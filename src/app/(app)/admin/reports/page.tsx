@@ -146,8 +146,8 @@ export default async function SalesReportPage({
               [
                 "Sales Report",
                 `${dateRangeLabel} (${dayPartRangeLabel})`,
-                `Started by ${selectedShift.startedByUser.username}`,
-                ...(selectedShift.endedByUser ? [`Ended by ${selectedShift.endedByUser.username}`] : []),
+                `Started by ${selectedShift.startedByUsernameSnapshot}`,
+                ...(selectedShift.endedByUsernameSnapshot ? [`Ended by ${selectedShift.endedByUsernameSnapshot}`] : []),
                 `Money made — Cash: ${formatPrice(revenue.cashRevenueCents)} · Card: ${formatPrice(revenue.cardRevenueCents)} · Total: ${formatPrice(revenue.totalRevenueCents)}`,
               ],
               [
@@ -167,11 +167,11 @@ export default async function SalesReportPage({
 
         <p className="text-sm text-zinc-500 mb-6">
           {dateRangeLabel} ({dayPartRangeLabel}) · Started by{" "}
-          <span className="font-medium">{selectedShift.startedByUser.username}</span>
-          {selectedShift.endedByUser && (
+          <span className="font-medium">{selectedShift.startedByUsernameSnapshot}</span>
+          {selectedShift.endedByUsernameSnapshot && (
             <>
               {" "}
-              &middot; Ended by <span className="font-medium">{selectedShift.endedByUser.username}</span>
+              &middot; Ended by <span className="font-medium">{selectedShift.endedByUsernameSnapshot}</span>
             </>
           )}
         </p>

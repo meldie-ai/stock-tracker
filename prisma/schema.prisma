@@ -19,9 +19,11 @@ model User {
   username          String    @unique
   passwordHash      String
   role              Role      @default(STAFF)
-  // Soft-delete: the app never hard-deletes a User row (shift history and
-  // audit log entries must stay intact after someone quits), so
-  // Shift.startedByUserId's ON DELETE RESTRICT is never exercised.
+  // Set when an admin deactivates the account (login is blocked), independent
+  // of whether the row itself still exists — an admin can later also delete a
+  // deactivated account outright. Every relation below is ON DELETE SET NULL
+  // and paired with a snapshot field, so deleting a User never breaks shift,
+  // sale, or audit history — it just stops pointing at a live account.
   deactivatedAt     DateTime?
   // Bumped on every admin-driven password reset so an already-issued
   // session cookie (SessionData.issuedAt) can be invalidated immediately,
@@ -175,10 +177,15 @@ model Shift {
   status          ShiftStatus @default(ACTIVE)
   startedAt       DateTime    @default(now())
   endedAt         DateTime?
-  startedByUserId String
-  startedByUser   User        @relation("ShiftStartedBy", fields: [startedByUserId], references: [id])
-  endedByUserId   String?
-  endedByUser     User?       @relation("ShiftEndedBy", fields: [endedByUserId], references: [id])
+  // Nullable (with ON DELETE SET NULL) so a deleted staff account doesn't block
+  // deletion or leave this shift unreferenceable — the snapshot below is what
+  // actually displays, same pattern as AuditLog/ShiftNote's usernameSnapshot.
+  startedByUserId           String?
+  startedByUser             User?   @relation("ShiftStartedBy", fields: [startedByUserId], references: [id], onDelete: SetNull)
+  startedByUsernameSnapshot String
+  endedByUserId             String?
+  endedByUser               User?   @relation("ShiftEndedBy", fields: [endedByUserId], references: [id])
+  endedByUsernameSnapshot   String?
 
   dayLabel       String?
   dateRangeLabel String?

@@ -38,13 +38,13 @@ export async function requireAuthenticatedRequest(
  * exempt — this is about staff accountability, not locking out oversight.
  */
 export function shiftOwnershipError(
-  activeShift: { startedByUserId: string; startedByUser: { username: string } } | null,
+  activeShift: { startedByUserId: string | null; startedByUsernameSnapshot: string } | null,
   user: { userId: string; role: CurrentUser["role"] }
 ): NextResponse | null {
   if (user.role === "ADMIN") return null;
   if (activeShift && activeShift.startedByUserId !== user.userId) {
     return NextResponse.json(
-      { error: `Only ${activeShift.startedByUser.username}, who started this shift, can do this` },
+      { error: `Only ${activeShift.startedByUsernameSnapshot}, who started this shift, can do this` },
       { status: 403 }
     );
   }

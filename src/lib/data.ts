@@ -22,7 +22,6 @@ export async function getActiveShift() {
     where: { status: "ACTIVE" },
     include: {
       sales: true,
-      startedByUser: { select: { username: true } },
       notes: { orderBy: { createdAt: "asc" } },
     },
   });
@@ -94,8 +93,6 @@ export async function getShiftDetail(shiftId: string) {
         orderBy: [{ categorySortOrder: "asc" }, { productNameSnapshot: "asc" }],
       },
       notes: { orderBy: { createdAt: "asc" } },
-      startedByUser: { select: { username: true } },
-      endedByUser: { select: { username: true } },
     },
   });
 }

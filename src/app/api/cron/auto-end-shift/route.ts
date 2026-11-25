@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const closedShift = await closeActiveShift(activeShift.id, null, {
+    const closedShift = await closeActiveShift(activeShift.id, null, null, {
       usernameSnapshot: "Automatic",
       text: "Shift automatically ended at 11:00pm — no one had ended it manually.",
     });

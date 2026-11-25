@@ -85,6 +85,19 @@ export default function AdminStaffClient({ users }: { users: StaffUser[] }) {
     });
   }
 
+  function deleteStaff(id: string, username: string) {
+    if (
+      !confirm(
+        `Permanently delete "${username}"? This can't be undone. Their past shifts, sales, and activity log entries stay on record, just no longer linked to a live account.`
+      )
+    ) {
+      return;
+    }
+    run(() => fetchWithTimeout(`/api/admin/users/${id}`, { method: "DELETE" }), {
+      successMessage: `Account "${username}" deleted`,
+    });
+  }
+
   function submitResetPassword(id: string) {
     if (!resetPasswordValue) return;
     run(
@@ -155,13 +168,22 @@ export default function AdminStaffClient({ users }: { users: StaffUser[] }) {
           {user.role !== "ADMIN" && (
             <div className="flex flex-wrap items-center gap-3 mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
               {user.deactivatedAt ? (
-                <button
-                  onClick={() => reactivate(user.id)}
-                  disabled={isPending}
-                  className="text-xs text-zinc-600 dark:text-zinc-400 hover:underline"
-                >
-                  Reactivate
-                </button>
+                <>
+                  <button
+                    onClick={() => reactivate(user.id)}
+                    disabled={isPending}
+                    className="text-xs text-zinc-600 dark:text-zinc-400 hover:underline"
+                  >
+                    Reactivate
+                  </button>
+                  <button
+                    onClick={() => deleteStaff(user.id, user.username)}
+                    disabled={isPending}
+                    className="text-xs text-red-500 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </>
               ) : (
                 <button
                   onClick={() => deactivate(user.id)}

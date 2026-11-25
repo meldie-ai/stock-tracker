@@ -17,7 +17,10 @@ export async function POST(request: NextRequest) {
   }
 
   const shift = await prisma.shift.create({
-    data: { startedByUserId: auth.user.userId },
+    data: {
+      startedByUserId: auth.user.userId,
+      startedByUsernameSnapshot: auth.user.username,
+    },
   });
 
   return NextResponse.json(shift, { status: 201 });

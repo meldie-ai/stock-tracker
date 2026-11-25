@@ -65,7 +65,7 @@ export default async function DashboardPage() {
       <ShiftControls
         hasActiveShift={!!activeShift}
         startedAtLabel={startedAtLabel}
-        startedByUsername={activeShift?.startedByUser.username ?? null}
+        startedByUsername={activeShift?.startedByUsernameSnapshot ?? null}
         notes={notes}
       />
 

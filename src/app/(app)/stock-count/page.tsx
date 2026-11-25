@@ -46,7 +46,7 @@ export default async function StockCountPage() {
                       {formatDateDDMMYY(activeShift.startedAt)} {formatTime12(activeShift.startedAt)}
                     </span>{" "}
                     ({dayPartLabel(activeShift.startedAt)}) &middot; Started by{" "}
-                    <span className="font-medium">{activeShift.startedByUser.username}</span>
+                    <span className="font-medium">{activeShift.startedByUsernameSnapshot}</span>
                   </p>
                   <p className="text-xs text-zinc-400 mt-0.5">
                     Snapshot as of {formatDateDDMMYY(generatedAt)} {formatTime12(generatedAt)}
@@ -57,7 +57,7 @@ export default async function StockCountPage() {
                     [
                       "Stock Count",
                       `Shift active since ${formatDateDDMMYY(activeShift.startedAt)} ${formatTime12(activeShift.startedAt)} (${dayPartLabel(activeShift.startedAt)})`,
-                      `Started by ${activeShift.startedByUser.username}`,
+                      `Started by ${activeShift.startedByUsernameSnapshot}`,
                       `Snapshot as of ${formatDateDDMMYY(generatedAt)} ${formatTime12(generatedAt)}`,
                     ],
                     categories

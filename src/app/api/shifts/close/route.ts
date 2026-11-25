@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const closedShift = await closeActiveShift(activeShift.id, auth.user.userId);
+    const closedShift = await closeActiveShift(activeShift.id, auth.user.userId, auth.user.username);
     return NextResponse.json(closedShift);
   } catch (err) {
     console.error("Failed to close shift", err);

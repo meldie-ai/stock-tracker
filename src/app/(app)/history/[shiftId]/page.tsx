@@ -93,8 +93,8 @@ export default async function ShiftDetailPage({
             [
               "Shift Report",
               `${dateRangeLabel} (${dayPartRangeLabel})`,
-              `Started by ${shift.startedByUser.username}`,
-              ...(shift.endedByUser ? [`Ended by ${shift.endedByUser.username}`] : []),
+              `Started by ${shift.startedByUsernameSnapshot}`,
+              ...(shift.endedByUsernameSnapshot ? [`Ended by ${shift.endedByUsernameSnapshot}`] : []),
             ],
             [
               { heading: "Products Sold", categories: soldCategories },
@@ -112,11 +112,11 @@ export default async function ShiftDetailPage({
         {dateRangeLabel} ({dayPartRangeLabel})
       </p>
       <p className="text-sm text-zinc-500 mb-6">
-        Started by <span className="font-medium">{shift.startedByUser.username}</span>
-        {shift.endedByUser && (
+        Started by <span className="font-medium">{shift.startedByUsernameSnapshot}</span>
+        {shift.endedByUsernameSnapshot && (
           <>
             {" "}
-            &middot; Ended by <span className="font-medium">{shift.endedByUser.username}</span>
+            &middot; Ended by <span className="font-medium">{shift.endedByUsernameSnapshot}</span>
           </>
         )}
       </p>

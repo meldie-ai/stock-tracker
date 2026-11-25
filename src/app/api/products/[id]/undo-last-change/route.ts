@@ -30,7 +30,6 @@ export async function POST(
 
   const activeShift = await prisma.shift.findFirst({
     where: { status: "ACTIVE" },
-    include: { startedByUser: { select: { username: true } } },
   });
   if (!activeShift) {
     return NextResponse.json({ error: "Start a shift to do this" }, { status: 409 });

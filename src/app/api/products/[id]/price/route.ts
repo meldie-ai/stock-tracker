@@ -13,7 +13,7 @@ export async function POST(
 
   const activeShift = await prisma.shift.findFirst({
     where: { status: "ACTIVE" },
-    select: { startedByUserId: true, startedByUser: { select: { username: true } } },
+    select: { startedByUserId: true, startedByUsernameSnapshot: true },
   });
   const ownershipError = shiftOwnershipError(activeShift, auth.user);
   if (ownershipError) return ownershipError;

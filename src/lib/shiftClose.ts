@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 export async function closeActiveShift(
   activeShiftId: string,
   endedByUserId: string | null,
+  endedByUsernameSnapshot: string | null,
   note?: { usernameSnapshot: string; text: string }
 ) {
   const endedAt = new Date();
@@ -69,6 +70,7 @@ export async function closeActiveShift(
           status: "CLOSED",
           endedAt,
           endedByUserId,
+          endedByUsernameSnapshot,
         },
       });
     },
