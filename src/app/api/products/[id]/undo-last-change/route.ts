@@ -8,12 +8,16 @@ import type { PaymentMethod } from "@/generated/prisma/client";
 /**
  * Reverses the single most recent thing that happened to a product this shift — a plain
  * Cash/Card sale, or a stock adjustment — but only while it's still the last thing that
- * happened (undoing an undo isn't supported). Deliberately excludes products that auto-refill
- * from a linked carton entirely, since both a sell and an adjustment on one of those can
- * trigger a cascade into the linked carton, and undoing would also need to reverse that
- * cascade, which this doesn't attempt. Deal sales aren't undoable here either — a deal sale
- * can span several products atomically and its revenue isn't a plain per-unit price, so it
- * can't be reconstructed from the current price the way a plain sale's can.
+ * happened (undoing an undo isn't supported). If that sale/adjustment also triggered a
+ * cascade into a linked carton (opening one to cover a shortfall, or refilling after hitting
+ * 0), every entry sharing its groupId is reversed together in the same transaction — each
+ * product restored to that entry's own recorded stockBefore, newest-first so a product
+ * touched twice in one group (e.g. a Singles item's sale and its own top-up) converges on
+ * the oldest, truly original value. Every product in the group must still have its group
+ * entry as its own true last action, or the whole group is rejected rather than partially
+ * reversed. Deal sales aren't undoable here — a deal sale can span several products
+ * atomically and its revenue isn't a plain per-unit price, so it can't be reconstructed from
+ * the current price the way a plain sale's can.
  */
 export async function POST(
   request: NextRequest,
@@ -36,38 +40,111 @@ export async function POST(
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const product = await tx.product.findUnique({
+      const productExists = await tx.product.findUnique({
         where: { id: productId },
-        include: { category: true },
+        select: { id: true },
       });
-      if (!product) throw new Error("NOT_FOUND");
-      if (product.linkedCartonProductId) throw new Error("NOTHING_TO_UNDO");
+      if (!productExists) throw new Error("NOT_FOUND");
 
-      const lastEntry = await tx.auditLog.findFirst({
+      // The literal last thing recorded for this product. If a sale/adjustment on
+      // it triggered a refill-to-full cascade (hit exactly 0), that refill — not the
+      // sale/adjustment itself — is now this product's last entry, so find the
+      // actual SELL/ADJUST among everything sharing its groupId instead of assuming
+      // the anchor entry IS it.
+      const anchorEntry = await tx.auditLog.findFirst({
         where: { shiftId: activeShift.id, productId },
         orderBy: { createdAt: "desc" },
       });
-      if (!lastEntry) throw new Error("NOTHING_TO_UNDO");
+      if (!anchorEntry) throw new Error("NOTHING_TO_UNDO");
 
-      if (lastEntry.action === "SELL") {
-        const paymentMethod: PaymentMethod | null =
-          lastEntry.note === "Cash sale" ? "CASH" : lastEntry.note === "Card sale" ? "CARD" : null;
+      // Every entry this sale/adjustment is linked to (itself, plus any CASCADE
+      // entries it triggered on a different product) — or just itself if it
+      // never touched anything else.
+      const groupEntries = anchorEntry.groupId
+        ? await tx.auditLog.findMany({ where: { groupId: anchorEntry.groupId } })
+        : [anchorEntry];
+
+      const primaryEntry = groupEntries.find((e) => e.action === "SELL" || e.action === "ADJUST");
+      if (!primaryEntry || !primaryEntry.productId) throw new Error("NOTHING_TO_UNDO");
+
+      let paymentMethod: PaymentMethod | null = null;
+      let revenueCents = 0;
+      let shiftSaleQuantity = 0;
+
+      if (primaryEntry.action === "SELL") {
+        paymentMethod =
+          primaryEntry.note === "Cash sale" ? "CASH" : primaryEntry.note === "Card sale" ? "CARD" : null;
         if (!paymentMethod) throw new Error("NOTHING_TO_UNDO");
 
-        const quantity = -lastEntry.quantityDelta;
-        const stockBefore = product.stockCount;
-
-        const updatedProduct = await tx.product.update({
-          where: { id: productId },
-          data: { stockCount: { increment: quantity } },
+        const primaryProduct = await tx.product.findUnique({
+          where: { id: primaryEntry.productId },
+          include: { category: true },
         });
+        if (!primaryProduct) throw new Error("NOTHING_TO_UNDO");
 
-        const unitPriceCents = resolveUnitPriceCents(product, product.category, paymentMethod);
-        const revenueCents = (unitPriceCents ?? 0) * quantity;
+        shiftSaleQuantity = -primaryEntry.quantityDelta;
+        const unitPriceCents = resolveUnitPriceCents(primaryProduct, primaryProduct.category, paymentMethod);
+        revenueCents = (unitPriceCents ?? 0) * shiftSaleQuantity;
+      }
 
+      // Keep only the most recent entry per product within the group — a
+      // product can appear twice (e.g. a Singles sale plus its own refill).
+      const latestByProductId = new Map<string, (typeof groupEntries)[number]>();
+      for (const entry of groupEntries) {
+        if (!entry.productId) continue;
+        const existing = latestByProductId.get(entry.productId);
+        if (!existing || entry.createdAt > existing.createdAt) {
+          latestByProductId.set(entry.productId, entry);
+        }
+      }
+
+      // Safety check: every affected product must still have its group entry as
+      // its own true last action. If anything else happened to any of them since
+      // (including the linked carton), reversing would be unsafe — reject the
+      // whole group rather than partially undo it.
+      for (const [pid, entry] of latestByProductId) {
+        const trueLast = await tx.auditLog.findFirst({
+          where: { productId: pid },
+          orderBy: { createdAt: "desc" },
+        });
+        if (!trueLast || trueLast.id !== entry.id) throw new Error("GROUP_CHANGED");
+      }
+
+      const affectedProductIds = Array.from(latestByProductId.keys());
+      const liveProducts = await tx.product.findMany({
+        where: { id: { in: affectedProductIds } },
+        select: { id: true, stockCount: true },
+      });
+      const liveStockByProductId = new Map(liveProducts.map((p) => [p.id, p.stockCount]));
+
+      // Reverse every entry's product to that entry's own stockBefore, newest
+      // first, so a product appearing twice in the group ends up at the
+      // oldest (truly original) recorded value, not an intermediate one.
+      const sortedEntries = [...groupEntries].sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      );
+      for (const entry of sortedEntries) {
+        if (!entry.productId) continue;
+        await tx.product.update({
+          where: { id: entry.productId },
+          data: { stockCount: entry.stockBefore },
+        });
+      }
+
+      const finalProducts = await tx.product.findMany({
+        where: { id: { in: affectedProductIds } },
+        select: { id: true, stockCount: true },
+      });
+      const finalStockByProductId = new Map(finalProducts.map((p) => [p.id, p.stockCount]));
+
+      if (paymentMethod) {
         const shiftSale = await tx.shiftSale.findUnique({
           where: {
-            shiftId_productId_paymentMethod: { shiftId: activeShift.id, productId, paymentMethod },
+            shiftId_productId_paymentMethod: {
+              shiftId: activeShift.id,
+              productId: primaryEntry.productId,
+              paymentMethod,
+            },
           },
         });
         if (!shiftSale) throw new Error("NOTHING_TO_UNDO");
@@ -75,63 +152,47 @@ export async function POST(
         await tx.shiftSale.update({
           where: { id: shiftSale.id },
           data: {
-            soldCount: Math.max(0, shiftSale.soldCount - quantity),
+            soldCount: Math.max(0, shiftSale.soldCount - shiftSaleQuantity),
             revenueCentsCollected: Math.max(0, shiftSale.revenueCentsCollected - revenueCents),
           },
         });
+      }
 
-        await tx.auditLog.delete({ where: { id: lastEntry.id } });
+      await tx.auditLog.deleteMany({ where: { id: { in: groupEntries.map((e) => e.id) } } });
+
+      for (const [pid, entry] of latestByProductId) {
+        const isPrimary = pid === primaryEntry.productId;
+        const note = isPrimary
+          ? primaryEntry.action === "SELL"
+            ? `Undid ${paymentMethod === "CASH" ? "Cash" : "Card"} sale of ${shiftSaleQuantity}`
+            : `Undid adjustment (was: ${primaryEntry.note ?? "no reason given"})`
+          : `Undid: ${entry.note ?? entry.action}`;
 
         await recordAuditEntry(tx, {
           action: "UNDO",
           userId: auth.user.userId,
           usernameSnapshot: auth.user.username,
-          productId: product.id,
-          productNameSnapshot: product.name,
-          categoryNameSnapshot: product.category.name,
-          quantityDelta: quantity,
-          stockBefore,
-          stockAfter: updatedProduct.stockCount,
+          productId: pid,
+          productNameSnapshot: entry.productNameSnapshot,
+          categoryNameSnapshot: entry.categoryNameSnapshot,
+          quantityDelta: finalStockByProductId.get(pid)! - liveStockByProductId.get(pid)!,
+          stockBefore: liveStockByProductId.get(pid)!,
+          stockAfter: finalStockByProductId.get(pid)!,
           shiftId: activeShift.id,
-          note: `Undid ${paymentMethod === "CASH" ? "Cash" : "Card"} sale of ${quantity}`,
+          note,
         });
+      }
 
+      let soldCount: number | null = null;
+      if (paymentMethod) {
         const totalSold = await tx.shiftSale.aggregate({
           where: { shiftId: activeShift.id, productId },
           _sum: { soldCount: true },
         });
-
-        return { stockCount: updatedProduct.stockCount, soldCount: totalSold._sum.soldCount ?? 0 };
+        soldCount = totalSold._sum.soldCount ?? 0;
       }
 
-      if (lastEntry.action === "ADJUST") {
-        const stockBefore = product.stockCount;
-
-        const updatedProduct = await tx.product.update({
-          where: { id: productId },
-          data: { stockCount: lastEntry.stockBefore },
-        });
-
-        await tx.auditLog.delete({ where: { id: lastEntry.id } });
-
-        await recordAuditEntry(tx, {
-          action: "UNDO",
-          userId: auth.user.userId,
-          usernameSnapshot: auth.user.username,
-          productId: product.id,
-          productNameSnapshot: product.name,
-          categoryNameSnapshot: product.category.name,
-          quantityDelta: updatedProduct.stockCount - stockBefore,
-          stockBefore,
-          stockAfter: updatedProduct.stockCount,
-          shiftId: activeShift.id,
-          note: `Undid adjustment (was: ${lastEntry.note ?? "no reason given"})`,
-        });
-
-        return { stockCount: updatedProduct.stockCount, soldCount: null };
-      }
-
-      throw new Error("NOTHING_TO_UNDO");
+      return { stockCount: finalStockByProductId.get(productId)!, soldCount };
     });
 
     return NextResponse.json(result);
@@ -142,6 +203,12 @@ export async function POST(
     if (err instanceof Error && err.message === "NOTHING_TO_UNDO") {
       return NextResponse.json(
         { error: "Nothing to undo — use Adjust stock instead" },
+        { status: 409 }
+      );
+    }
+    if (err instanceof Error && err.message === "GROUP_CHANGED") {
+      return NextResponse.json(
+        { error: "Can't undo — something else has changed since (e.g. the linked carton)" },
         { status: 409 }
       );
     }

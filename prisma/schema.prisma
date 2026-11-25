@@ -158,7 +158,14 @@ model AuditLog {
   shiftId String?
   note    String?
 
+  // Ties a sale/adjustment to any CASCADE entries it triggered on a different
+  // product (opening or refilling a linked carton), so Undo can find and
+  // reverse all of them together instead of only the product you acted on.
+  // Null for anything that didn't trigger (or isn't) a cascade.
+  groupId String?
+
   @@index([createdAt])
+  @@index([groupId])
   @@index([userId])
   @@index([productId])
 }

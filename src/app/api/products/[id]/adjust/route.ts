@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthenticatedRequest, shiftOwnershipError } from "@/lib/apiHelpers";
@@ -30,6 +31,8 @@ export async function POST(
   const ownershipError = shiftOwnershipError(activeShift, auth.user);
   if (ownershipError) return ownershipError;
 
+  const groupId = randomUUID();
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({
@@ -60,6 +63,7 @@ export async function POST(
         stockAfter: updated.stockCount,
         shiftId: activeShift.id,
         note: quantityDelta !== 0 ? reason! : null,
+        groupId,
       });
 
       let finalStockCount = updated.stockCount;
@@ -71,6 +75,7 @@ export async function POST(
         userId: auth.user.userId,
         usernameSnapshot: auth.user.username,
         shiftId: activeShift.id,
+        groupId,
       });
       if (cascade.cascaded) {
         const refilled = await tx.product.update({
@@ -91,6 +96,7 @@ export async function POST(
           stockAfter: refilled.stockCount,
           shiftId: activeShift.id,
           note: "Auto-refilled from linked carton product",
+          groupId,
         });
       }
 

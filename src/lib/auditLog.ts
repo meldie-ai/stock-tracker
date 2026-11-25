@@ -14,6 +14,7 @@ export async function recordAuditEntry(
     stockAfter: number;
     shiftId?: string | null;
     note?: string | null;
+    groupId?: string | null;
   }
 ): Promise<void> {
   await tx.auditLog.create({ data: entry });

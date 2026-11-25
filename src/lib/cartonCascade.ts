@@ -23,6 +23,7 @@ export type CascadeCheckInput = {
   userId: string;
   usernameSnapshot: string;
   shiftId?: string | null;
+  groupId?: string | null;
 };
 
 export type CascadeCheckResult = {
@@ -79,6 +80,7 @@ export async function tryCascadeSinglesFromCarton(
     stockAfter: cartonProduct.stockCount - 1,
     shiftId: input.shiftId,
     note: `Auto-decremented: 1 carton consumed to refill linked product "${input.productName}"`,
+    groupId: input.groupId,
   });
 
   return { cascaded: true, singlesStockCount: PACK_SIZE };
@@ -94,6 +96,7 @@ export type EnsureStockInput = {
   userId: string;
   usernameSnapshot: string;
   shiftId?: string | null;
+  groupId?: string | null;
 };
 
 export type EnsureStockResult =
@@ -150,11 +153,31 @@ export async function ensureSinglesStockForSale(
     stockAfter: cartonProduct.stockCount - cartonsNeeded,
     shiftId: input.shiftId,
     note: `Auto-decremented: ${cartonsNeeded} carton${cartonsNeeded > 1 ? "s" : ""} opened to cover a sale of ${input.quantityNeeded} "${input.productName}"`,
+    groupId: input.groupId,
   });
 
+  const toppedUpBy = cartonsNeeded * PACK_SIZE;
   const toppedUp = await tx.product.update({
     where: { id: input.productId },
-    data: { stockCount: { increment: cartonsNeeded * PACK_SIZE } },
+    data: { stockCount: { increment: toppedUpBy } },
+  });
+
+  // Recorded so Undo can reverse this top-up too (it has its own stockBefore,
+  // separate from whatever sale prompted it) — without this, undoing the sale
+  // that triggered it would only know to roll back to the post-top-up count.
+  await recordAuditEntry(tx, {
+    action: "CASCADE",
+    userId: input.userId,
+    usernameSnapshot: input.usernameSnapshot,
+    productId: input.productId,
+    productNameSnapshot: input.productName,
+    categoryNameSnapshot: input.categoryName,
+    quantityDelta: toppedUpBy,
+    stockBefore: input.currentStockCount,
+    stockAfter: toppedUp.stockCount,
+    shiftId: input.shiftId,
+    note: `Auto-refilled: topped up by ${toppedUpBy} to cover a sale of ${input.quantityNeeded}`,
+    groupId: input.groupId,
   });
 
   return { ok: true, stockBefore: toppedUp.stockCount };

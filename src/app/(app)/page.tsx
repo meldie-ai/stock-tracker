@@ -29,15 +29,16 @@ export default async function DashboardPage() {
 
   // Which products currently have something undoable, and what kind — only when the
   // literal last thing that happened to that product this shift was a plain Cash/Card
-  // sell or a stock adjustment, and it isn't a carton-linked product (undoing those would
-  // also need to reverse whatever cascade they triggered, which isn't supported).
+  // sell or a stock adjustment. A carton-linked product's sale/adjustment may have also
+  // triggered a cascade into its carton; the undo route reverses both together (or blocks
+  // the whole thing if something newer happened to either side since), so no special-casing
+  // is needed here.
   const lastActionByProductId = activeShift
     ? await getLastActionByProductId(activeShift.id)
     : new Map<string, { action: string; note: string | null }>();
   const undoableActionByProductId = new Map<string, "SELL" | "ADJUST">();
   for (const category of categories) {
     for (const product of category.products) {
-      if (product.linkedCartonProductId) continue;
       const last = lastActionByProductId.get(product.id);
       if (!last) continue;
       if (last.action === "SELL" && (last.note === "Cash sale" || last.note === "Card sale")) {
