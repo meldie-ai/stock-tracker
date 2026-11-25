@@ -51,6 +51,7 @@ export default function ProductRow({
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustValue, setAdjustValue] = useState(String(stockCount));
   const [adjustReason, setAdjustReason] = useState("");
+  const [adjustOtherText, setAdjustOtherText] = useState("");
   const [priceOpen, setPriceOpen] = useState(false);
   const [cashPriceValue, setCashPriceValue] = useState(centsToInputValue(cashPriceCents));
   const [cardPriceValue, setCardPriceValue] = useState(centsToInputValue(cardPriceCents));
@@ -144,6 +145,11 @@ export default function ProductRow({
       setError("Select a reason for this change");
       return;
     }
+    if (isChange && adjustReason === "Other" && !adjustOtherText.trim()) {
+      setError("Describe the reason");
+      return;
+    }
+    const reason = adjustReason === "Other" ? adjustOtherText.trim() : adjustReason;
     setError(null);
     startTransition(async () => {
       try {
@@ -153,7 +159,7 @@ export default function ProductRow({
           body: JSON.stringify({
             mode: "set",
             value,
-            ...(isChange ? { reason: adjustReason } : {}),
+            ...(isChange ? { reason } : {}),
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -163,6 +169,7 @@ export default function ProductRow({
         }
         setAdjustOpen(false);
         setAdjustReason("");
+        setAdjustOtherText("");
         notifyStockUpdated();
         router.refresh();
       } catch (err) {
@@ -359,6 +366,7 @@ export default function ProductRow({
                 onClick={() => {
                   setAdjustOpen(false);
                   setAdjustReason("");
+                  setAdjustOtherText("");
                 }}
                 className="text-xs text-zinc-400 hover:text-zinc-600"
               >
@@ -366,23 +374,38 @@ export default function ProductRow({
               </button>
             </div>
             {adjustValue !== "" && Number(adjustValue) !== stockCount && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-zinc-500">Reason</span>
-                <select
-                  value={adjustReason}
-                  onChange={(e) => setAdjustReason(e.target.value)}
-                  className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-xs"
-                >
-                  <option value="">Select a reason&hellip;</option>
-                  {(Number(adjustValue) > stockCount
-                    ? ADJUST_INCREASE_REASONS
-                    : ADJUST_DEDUCTION_REASONS
-                  ).map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-zinc-500">Reason</span>
+                  <select
+                    value={adjustReason}
+                    onChange={(e) => {
+                      setAdjustReason(e.target.value);
+                      if (e.target.value !== "Other") setAdjustOtherText("");
+                    }}
+                    className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-xs"
+                  >
+                    <option value="">Select a reason&hellip;</option>
+                    {(Number(adjustValue) > stockCount
+                      ? ADJUST_INCREASE_REASONS
+                      : ADJUST_DEDUCTION_REASONS
+                    ).map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {adjustReason === "Other" && (
+                  <input
+                    type="text"
+                    value={adjustOtherText}
+                    onChange={(e) => setAdjustOtherText(e.target.value)}
+                    placeholder="Describe the reason"
+                    maxLength={200}
+                    className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-xs"
+                  />
+                )}
               </div>
             )}
           </div>

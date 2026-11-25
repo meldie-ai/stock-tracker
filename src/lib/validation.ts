@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { ADJUST_DEDUCTION_REASONS, ADJUST_INCREASE_REASONS } from "@/lib/adjustReasons";
 
 export const loginSchema = z.object({
   username: z.string().trim().min(1).max(100),
@@ -14,7 +13,11 @@ export const sellSchema = z.object({
 export const adjustSchema = z.object({
   mode: z.enum(["set", "delta"]),
   value: z.number().int().max(1_000_000),
-  reason: z.enum([...ADJUST_DEDUCTION_REASONS, ...ADJUST_INCREASE_REASONS]).optional(),
+  // Not restricted to the dropdown's fixed list — "Other" lets staff type their
+  // own reason, which is sent here as free text instead of the literal "Other".
+  // "Restock" must still be sent as that exact word for it to be picked up by
+  // the Restocked summaries (see lib/data.ts), which match on it literally.
+  reason: z.string().trim().min(1).max(200).optional(),
 });
 
 export const createCategorySchema = z.object({
