@@ -12,7 +12,7 @@ type Product = {
   categoryId: string;
   linkedCartonProductId: string | null;
 };
-type Category = { id: string; name: string; products: Product[] };
+type Category = { id: string; name: string; sortOrder: number; products: Product[] };
 
 export default function ManageClient({ categories }: { categories: Category[] }) {
   const router = useRouter();
@@ -71,6 +71,42 @@ export default function ManageClient({ categories }: { categories: Category[] })
   function deleteCategory(id: string) {
     if (!confirm("Delete this category? It must have no products left in it.")) return;
     run(() => fetchWithTimeout(`/api/categories/${id}`, { method: "DELETE" }));
+  }
+
+  // Swaps this category's sortOrder with its immediate neighbour — the simplest way to
+  // move one step at a time without renumbering every other category.
+  function moveCategory(id: string, direction: "earlier" | "later") {
+    const index = categories.findIndex((c) => c.id === id);
+    const swapIndex = direction === "earlier" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= categories.length) return;
+    const current = categories[index]!;
+    const swapWith = categories[swapIndex]!;
+    setError(null);
+    startTransition(async () => {
+      try {
+        const [resA, resB] = await Promise.all([
+          fetchWithTimeout(`/api/categories/${current.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sortOrder: swapWith.sortOrder }),
+          }),
+          fetchWithTimeout(`/api/categories/${swapWith.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sortOrder: current.sortOrder }),
+          }),
+        ]);
+        const failed = !resA.ok ? resA : !resB.ok ? resB : null;
+        if (failed) {
+          const data = await failed.json().catch(() => ({}));
+          setError(data.error ?? "Something went wrong");
+          return;
+        }
+        router.refresh();
+      } catch (err) {
+        setError(describeFetchError(err));
+      }
+    });
   }
 
   function addProduct(categoryId: string) {
@@ -154,7 +190,7 @@ export default function ManageClient({ categories }: { categories: Category[] })
         <p className="text-sm text-zinc-500">No categories yet. Add one above to get started.</p>
       ) : (
         <TabSwitcher tabs={categories.map((c) => ({ id: c.id, label: c.name.split("\n")[0] }))}>
-          {categories.map((category) => (
+          {categories.map((category, index) => (
             <section
               key={category.id}
               className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-4"
@@ -168,6 +204,22 @@ export default function ManageClient({ categories }: { categories: Category[] })
                   }}
                   className="flex-1 min-w-0 rounded-md border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 bg-transparent px-2 py-1 text-sm font-bold uppercase tracking-wide resize-y"
                 />
+                <button
+                  onClick={() => moveCategory(category.id, "earlier")}
+                  disabled={index === 0}
+                  title="Move earlier"
+                  className="text-xs text-zinc-500 hover:underline disabled:opacity-30 disabled:hover:no-underline shrink-0"
+                >
+                  &larr;
+                </button>
+                <button
+                  onClick={() => moveCategory(category.id, "later")}
+                  disabled={index === categories.length - 1}
+                  title="Move later"
+                  className="text-xs text-zinc-500 hover:underline disabled:opacity-30 disabled:hover:no-underline shrink-0"
+                >
+                  &rarr;
+                </button>
                 <button
                   onClick={() => deleteCategory(category.id)}
                   className="text-xs text-red-500 hover:underline shrink-0"
