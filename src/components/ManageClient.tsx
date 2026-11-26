@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
+import TabSwitcher from "@/components/TabSwitcher";
 
 type Product = {
   id: string;
@@ -149,116 +150,122 @@ export default function ManageClient({ categories }: { categories: Category[] })
 
       {error && <p className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      {categories.map((category) => (
-        <section
-          key={category.id}
-          className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-4"
-        >
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <textarea
-              defaultValue={category.name}
-              rows={category.name.split("\n").length}
-              onBlur={(e) => {
-                if (e.target.value !== category.name) renameCategory(category.id, e.target.value);
-              }}
-              className="flex-1 min-w-0 rounded-md border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 bg-transparent px-2 py-1 text-sm font-bold uppercase tracking-wide resize-y"
-            />
-            <button
-              onClick={() => deleteCategory(category.id)}
-              className="text-xs text-red-500 hover:underline shrink-0"
+      {categories.length === 0 ? (
+        <p className="text-sm text-zinc-500">No categories yet. Add one above to get started.</p>
+      ) : (
+        <TabSwitcher tabs={categories.map((c) => ({ id: c.id, label: c.name.split("\n")[0] }))}>
+          {categories.map((category) => (
+            <section
+              key={category.id}
+              className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 mb-4"
             >
-              Delete category
-            </button>
-          </div>
-
-          {category.products.map((product) => (
-            <div
-              key={product.id}
-              className="flex flex-col gap-1.5 py-2 border-t border-zinc-100 dark:border-zinc-900 first:border-0"
-            >
-              <input
-                defaultValue={product.name}
-                onBlur={(e) => {
-                  if (e.target.value !== product.name) renameProduct(product.id, e.target.value);
-                }}
-                className="w-full rounded-md border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 bg-transparent px-2 py-1 text-sm"
-              />
-              <div className="flex items-center gap-2 px-2">
-                <select
-                  defaultValue={product.categoryId}
-                  onChange={(e) => moveProduct(product.id, e.target.value)}
-                  className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-1 py-1 text-xs"
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name.split("\n")[0]}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <textarea
+                  defaultValue={category.name}
+                  rows={category.name.split("\n").length}
+                  onBlur={(e) => {
+                    if (e.target.value !== category.name) renameCategory(category.id, e.target.value);
+                  }}
+                  className="flex-1 min-w-0 rounded-md border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 bg-transparent px-2 py-1 text-sm font-bold uppercase tracking-wide resize-y"
+                />
                 <button
-                  onClick={() => deleteProduct(product.id)}
-                  className="ml-auto text-xs text-red-500 hover:underline"
+                  onClick={() => deleteCategory(category.id)}
+                  className="text-xs text-red-500 hover:underline shrink-0"
                 >
-                  Delete
+                  Delete category
                 </button>
               </div>
-              {category.name.trim().toUpperCase() === "SINGLES" && cartonsCategory && (
-                <div className="flex items-center gap-2 px-2">
-                  <span className="text-xs text-zinc-400">Refills from:</span>
-                  <select
-                    defaultValue={product.linkedCartonProductId ?? ""}
-                    onChange={(e) => linkProduct(product.id, e.target.value)}
-                    className="min-w-0 flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-1 py-1 text-xs"
-                  >
-                    <option value="">None (no auto-refill)</option>
-                    {cartonsCategory.products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-          ))}
 
-          <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
-            <input
-              placeholder="New product name"
-              value={newProductByCategory[category.id]?.name ?? ""}
-              onChange={(e) =>
-                setNewProductByCategory((prev) => ({
-                  ...prev,
-                  [category.id]: { name: e.target.value, stock: prev[category.id]?.stock ?? "" },
-                }))
-              }
-              className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
-            />
-            <div className="flex items-center gap-2">
-              <input
-                placeholder="Stock"
-                type="number"
-                min={0}
-                value={newProductByCategory[category.id]?.stock ?? ""}
-                onChange={(e) =>
-                  setNewProductByCategory((prev) => ({
-                    ...prev,
-                    [category.id]: { name: prev[category.id]?.name ?? "", stock: e.target.value },
-                  }))
-                }
-                className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
-              />
-              <button
-                onClick={() => addProduct(category.id)}
-                disabled={isPending}
-                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
-              >
-                Add product
-              </button>
-            </div>
-          </div>
-        </section>
-      ))}
+              {category.products.map((product) => (
+                <div
+                  key={product.id}
+                  className="flex flex-col gap-1.5 py-2 border-t border-zinc-100 dark:border-zinc-900 first:border-0"
+                >
+                  <input
+                    defaultValue={product.name}
+                    onBlur={(e) => {
+                      if (e.target.value !== product.name) renameProduct(product.id, e.target.value);
+                    }}
+                    className="w-full rounded-md border border-transparent hover:border-zinc-300 dark:hover:border-zinc-700 bg-transparent px-2 py-1 text-sm"
+                  />
+                  <div className="flex items-center gap-2 px-2">
+                    <select
+                      defaultValue={product.categoryId}
+                      onChange={(e) => moveProduct(product.id, e.target.value)}
+                      className="rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-1 py-1 text-xs"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name.split("\n")[0]}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => deleteProduct(product.id)}
+                      className="ml-auto text-xs text-red-500 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                  {category.name.trim().toUpperCase() === "SINGLES" && cartonsCategory && (
+                    <div className="flex items-center gap-2 px-2">
+                      <span className="text-xs text-zinc-400">Refills from:</span>
+                      <select
+                        defaultValue={product.linkedCartonProductId ?? ""}
+                        onChange={(e) => linkProduct(product.id, e.target.value)}
+                        className="min-w-0 flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-1 py-1 text-xs"
+                      >
+                        <option value="">None (no auto-refill)</option>
+                        {cartonsCategory.products.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
+                <input
+                  placeholder="New product name"
+                  value={newProductByCategory[category.id]?.name ?? ""}
+                  onChange={(e) =>
+                    setNewProductByCategory((prev) => ({
+                      ...prev,
+                      [category.id]: { name: e.target.value, stock: prev[category.id]?.stock ?? "" },
+                    }))
+                  }
+                  className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
+                />
+                <div className="flex items-center gap-2">
+                  <input
+                    placeholder="Stock"
+                    type="number"
+                    min={0}
+                    value={newProductByCategory[category.id]?.stock ?? ""}
+                    onChange={(e) =>
+                      setNewProductByCategory((prev) => ({
+                        ...prev,
+                        [category.id]: { name: prev[category.id]?.name ?? "", stock: e.target.value },
+                      }))
+                    }
+                    className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
+                  />
+                  <button
+                    onClick={() => addProduct(category.id)}
+                    disabled={isPending}
+                    className="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
+                  >
+                    Add product
+                  </button>
+                </div>
+              </div>
+            </section>
+          ))}
+        </TabSwitcher>
+      )}
     </div>
   );
 }
