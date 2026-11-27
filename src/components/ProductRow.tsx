@@ -6,6 +6,7 @@ import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
 import { notifyStockUpdated } from "@/lib/updateSignal";
 import { formatPrice, centsToInputValue, parsePriceInput } from "@/lib/price";
 import { ADJUST_DEDUCTION_REASONS, ADJUST_INCREASE_REASONS } from "@/lib/adjustReasons";
+import NumberStepper from "@/components/NumberStepper";
 
 const LOW_STOCK_THRESHOLD = 3; // easy to adjust; low-stock = 0 < stockCount <= this
 
@@ -287,13 +288,7 @@ export default function ProductRow({
 
       {hasActiveShift && isShiftOwner && !soldOut && (
         <div className="mt-2 flex flex-wrap items-center justify-end gap-1.5">
-          <input
-            type="number"
-            min={1}
-            value={sellQty}
-            onChange={(e) => setSellQty(e.target.value)}
-            className="w-14 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1.5 text-sm text-center"
-          />
+          <NumberStepper value={sellQty} onChange={setSellQty} min={1} />
           <button
             onClick={() => handleSell("CASH")}
             disabled={isPending}
@@ -348,13 +343,7 @@ export default function ProductRow({
           <div className="flex flex-col gap-1.5 mt-1">
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-zinc-500">Set stock to</span>
-              <input
-                type="number"
-                min={0}
-                value={adjustValue}
-                onChange={(e) => setAdjustValue(e.target.value)}
-                className="w-16 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
-              />
+              <NumberStepper value={adjustValue} onChange={setAdjustValue} min={0} />
               <button
                 onClick={handleAdjustSave}
                 disabled={isPending}
@@ -451,15 +440,7 @@ export default function ProductRow({
                 className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
               />
               <span className="text-xs text-zinc-500">Deal: buy</span>
-              <input
-                type="number"
-                min={1}
-                step="1"
-                placeholder="Qty"
-                value={dealQuantityValue}
-                onChange={(e) => setDealQuantityValue(e.target.value)}
-                className="w-14 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
-              />
+              <NumberStepper value={dealQuantityValue} onChange={setDealQuantityValue} min={1} />
               <span className="text-xs text-zinc-500">for $ (cash)</span>
               <input
                 type="number"

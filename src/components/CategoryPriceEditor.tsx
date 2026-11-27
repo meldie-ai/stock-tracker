@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
 import { formatPrice, centsToInputValue, parsePriceInput } from "@/lib/price";
+import NumberStepper from "@/components/NumberStepper";
 
 export default function CategoryPriceEditor({
   categoryId,
@@ -198,15 +199,7 @@ export default function CategoryPriceEditor({
             className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
           />
           <span className="text-xs text-zinc-500">Deal: buy</span>
-          <input
-            type="number"
-            min={1}
-            step="1"
-            placeholder="Qty"
-            value={dealQuantityValue}
-            onChange={(e) => setDealQuantityValue(e.target.value)}
-            className="w-14 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm text-center"
-          />
+          <NumberStepper value={dealQuantityValue} onChange={setDealQuantityValue} min={1} />
           <span className="text-xs text-zinc-500">for $ (cash)</span>
           <input
             type="number"

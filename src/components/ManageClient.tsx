@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithTimeout, describeFetchError } from "@/lib/fetchWithTimeout";
 import TabSwitcher from "@/components/TabSwitcher";
+import NumberStepper from "@/components/NumberStepper";
 
 type Product = {
   id: string;
@@ -292,18 +293,16 @@ export default function ManageClient({ categories }: { categories: Category[] })
                   className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
                 />
                 <div className="flex items-center gap-2">
-                  <input
-                    placeholder="Stock"
-                    type="number"
-                    min={0}
+                  <span className="text-xs text-zinc-500">Stock</span>
+                  <NumberStepper
                     value={newProductByCategory[category.id]?.stock ?? ""}
-                    onChange={(e) =>
+                    onChange={(value) =>
                       setNewProductByCategory((prev) => ({
                         ...prev,
-                        [category.id]: { name: prev[category.id]?.name ?? "", stock: e.target.value },
+                        [category.id]: { name: prev[category.id]?.name ?? "", stock: value },
                       }))
                     }
-                    className="w-20 rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-2 py-1 text-sm"
+                    min={0}
                   />
                   <button
                     onClick={() => addProduct(category.id)}
