@@ -25,11 +25,13 @@ export async function POST(
     where: { status: "ACTIVE" },
     select: { id: true, startedByUserId: true, startedByUsernameSnapshot: true },
   });
-  if (!activeShift) {
+  if (!activeShift && auth.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Start a shift to do this" }, { status: 409 });
   }
-  const ownershipError = shiftOwnershipError(activeShift, auth.user);
-  if (ownershipError) return ownershipError;
+  if (activeShift) {
+    const ownershipError = shiftOwnershipError(activeShift, auth.user);
+    if (ownershipError) return ownershipError;
+  }
 
   const groupId = randomUUID();
 
@@ -61,7 +63,7 @@ export async function POST(
         quantityDelta: updated.stockCount - product.stockCount,
         stockBefore: product.stockCount,
         stockAfter: updated.stockCount,
-        shiftId: activeShift.id,
+        shiftId: activeShift?.id ?? null,
         note: quantityDelta !== 0 ? reason! : null,
         groupId,
       });
@@ -74,7 +76,7 @@ export async function POST(
         newStockCount: updated.stockCount,
         userId: auth.user.userId,
         usernameSnapshot: auth.user.username,
-        shiftId: activeShift.id,
+        shiftId: activeShift?.id ?? null,
         groupId,
       });
       if (cascade.cascaded) {
@@ -94,7 +96,7 @@ export async function POST(
           quantityDelta: refilled.stockCount,
           stockBefore: 0,
           stockAfter: refilled.stockCount,
-          shiftId: activeShift.id,
+          shiftId: activeShift?.id ?? null,
           note: "Auto-refilled from linked carton product",
           groupId,
         });
