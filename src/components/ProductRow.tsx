@@ -347,7 +347,7 @@ export default function ProductRow({
               <button
                 onClick={handleAdjustSave}
                 disabled={isPending}
-                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
+                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
               >
                 {isPending ? "Saving…" : "Save"}
               </button>
@@ -357,7 +357,7 @@ export default function ProductRow({
                   setAdjustReason("");
                   setAdjustOtherText("");
                 }}
-                className="text-xs text-zinc-400 hover:text-zinc-600"
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-zinc-900 hover:text-zinc-700 dark:hover:text-zinc-200"
               >
                 Cancel
               </button>
@@ -465,13 +465,13 @@ export default function ProductRow({
               <button
                 onClick={handlePriceSave}
                 disabled={isPending}
-                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
+                className="rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-900 disabled:opacity-50"
               >
                 {isPending ? "Saving…" : "Save"}
               </button>
               <button
                 onClick={() => setPriceOpen(false)}
-                className="text-xs text-zinc-400 hover:text-zinc-600"
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-zinc-900 hover:text-zinc-700 dark:hover:text-zinc-200"
               >
                 Cancel
               </button>
